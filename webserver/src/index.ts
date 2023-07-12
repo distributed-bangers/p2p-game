@@ -1,4 +1,4 @@
-import express from "express";
+import express from 'express';
 
 // //* app.js is mainly for applying middleware
 // if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
