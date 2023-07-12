@@ -2,12 +2,13 @@ import * as THREE from 'three'
 import { Peer } from 'peerjs'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
-const peer = new Peer('client1', {
-    host: 'localhost',
-    port: 8081,
-})
+const username = prompt("enter username")
 
-const conn = peer.connect('client2')
+const peer = new Peer(username!)
+
+const username2 = prompt("other username")
+
+const conn = peer.connect(username2!)
 conn.send('hi')
 
 let moveUp = false
@@ -39,7 +40,7 @@ class Gun extends THREE.Mesh {
 
 class Player extends THREE.Mesh {
     gun: Gun
-    bullets: THREE.Mesh[] = []
+    bullets: Bullet[] = []
 
     constructor(color: THREE.ColorRepresentation) {
         const playerGeometry = new THREE.CapsuleGeometry(1, 1, 4, 8)
@@ -164,6 +165,7 @@ function onWindowResize() {
 
 // Scene
 const scene = new THREE.Scene()
+const raycaster = new THREE.Raycaster()
 
 // Camera
 const camera = createCamera()
@@ -216,18 +218,15 @@ function animate() {
     }
 
     for (const bullet of player.bullets) {
-        if (bullet.id !== player.gun.id) {
-            bullet.translateZ(0.5)
+        bullet.translateZ(0.5)
 
-            const ray = new THREE.Raycaster()
-            const direction = new THREE.Vector3()
-            bullet.getWorldDirection(direction)
-            ray.set(bullet.position, direction)
-            const collisionResults = ray.intersectObjects(enemies)
+        const direction = new THREE.Vector3()
+        bullet.getWorldDirection(direction)
+        raycaster.set(bullet.position, direction)
+        const collisionResults = raycaster.intersectObjects(enemies)
 
-            if (collisionResults.length > 0 && collisionResults[0].distance < 0.5) {
-                enemies[0].material = new THREE.MeshBasicMaterial({ color: 'green' })
-            }
+        if (collisionResults.length > 0 && collisionResults[0].distance < 0.5) {
+            enemies[0].material = new THREE.MeshBasicMaterial({ color: 'green' })
         }
     }
 
