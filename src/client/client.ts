@@ -14,6 +14,7 @@ async function connectToPeer(peer: Peer, id: string) {
     const conn = peer.connect(id)
 
     return new Promise<DataConnection>(resolve => conn.on('open', () => {
+        console.log(`connection to ${id} established`)
         resolve(conn)
     }))
 }
@@ -27,9 +28,18 @@ establishPeerjsConnection().then(async (peer) => {
 
     const username = prompt('other username')!
 
-    const dataConnection = await connectToPeer(peer, username)
+    connectToPeer(peer, username).then((dataConnection) => {
+        dataConnection.on('data', (data) => {
+            console.log(data)
+        })
 
-    sendData(dataConnection, 'Hi!')
+        dataConnection.on('error', (error) => {
+            console.error(error)
+        })
+
+        const data = prompt("Message", "Hi!")
+        sendData(dataConnection, data)
+    })
 })
 
 /*
