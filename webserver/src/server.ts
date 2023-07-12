@@ -1,6 +1,6 @@
-import app from './index.js';
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import app from "app";
 dotenv.config({ path: './src/config.env' });
 
 const DBConnection = process.env.DATABASE!.replace(
