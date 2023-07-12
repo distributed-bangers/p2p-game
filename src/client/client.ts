@@ -1,15 +1,59 @@
 import * as THREE from 'three'
-import { Peer } from 'peerjs'
+import { DataConnection, Peer } from 'peerjs'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
-const username = prompt("enter username")
+async function establishPeerjsConnection(): Promise<Peer> {
+    const peer = new Peer()
 
-const peer = new Peer(username!)
+    return new Promise(resolve => peer.on('open', () => {
+        resolve(peer)
+    }))
+}
 
-const username2 = prompt("other username")
+async function connectToPeer(peer: Peer, id: string) {
+    const conn = peer.connect(id)
 
-const conn = peer.connect(username2!)
-conn.send('hi')
+    return new Promise<DataConnection>(resolve => conn.on('open', () => {
+        resolve(conn)
+    }))
+}
+
+function sendData(dataConnection: DataConnection, data: any) {
+    dataConnection.send(data)
+}
+
+establishPeerjsConnection().then(async (peer) => {
+    console.log(peer.id)
+
+    const username = prompt('other username')!
+
+    const dataConnection = await connectToPeer(peer, username)
+
+    sendData(dataConnection, 'Hi!')
+})
+
+/*
+
+peer.on('open', () => {
+    console.log(peer)
+
+    const conn = peer.connect(username2!)
+    conn.send('hi')
+
+    conn.on('open', () => {
+        console.log('connection established')
+    })
+
+    conn.on('data', (data) => {
+        console.log(data)
+    })
+})
+
+peer.on('connection', (dataConnection) => {
+    console.log(dataConnection)
+})
+ */
+
 
 let moveUp = false
 let moveDown = false
