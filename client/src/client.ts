@@ -5,6 +5,10 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 async function establishPeerjsConnection(): Promise<Peer> {
     const peer = new Peer()
 
+    peer.on('connection',
+        dataConnection => dataConnection.on('data', data => console.log(`peer ${peer.id} received ${data}`)),
+    )
+
     return new Promise(resolve => peer.on('open', () => {
         resolve(peer)
     }))
@@ -26,20 +30,13 @@ function sendData(dataConnection: DataConnection, data: any) {
 establishPeerjsConnection().then(async (peer) => {
     console.log(peer.id)
 
-    const username = prompt('other username')!
+    //const username = prompt('other username')!
+    const peer2 = await establishPeerjsConnection()
 
-    connectToPeer(peer, username).then((dataConnection) => {
-        dataConnection.on('data', (data) => {
-            console.log(data)
-        })
+    const dataConnection = await connectToPeer(peer, peer2.id)
 
-        dataConnection.on('error', (error) => {
-            console.error(error)
-        })
-
-        const data = prompt("Message", "Hi!")
-        sendData(dataConnection, data)
-    })
+    const data = prompt('Message', 'Hi!')
+    sendData(dataConnection, data)
 })
 
 /*
