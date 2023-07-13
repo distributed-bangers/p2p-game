@@ -1,66 +1,49 @@
 import * as THREE from 'three'
-import { DataConnection, Peer } from 'peerjs'
+import { DataConnection, Peer, PeerConnectOption } from 'peerjs'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
-async function establishPeerjsConnection(): Promise<Peer> {
-    const peer = new Peer()
+class PeerClient extends Peer {
+    private constructor() {
+        super()
 
-    peer.on('connection',
-        dataConnection => dataConnection.on('data', data => console.log(`peer ${peer.id} received ${data}`)),
-    )
+        this.on('connection',
+            dataConnection => dataConnection.on('data', data => console.log(`peer ${this.id} received ${data}`)),
+        )
+    }
 
-    return new Promise(resolve => peer.on('open', () => {
-        resolve(peer)
-    }))
+    static async initialize(): Promise<PeerClient> {
+        const peerClient = new PeerClient()
+
+        return new Promise(resolve => peerClient.on('open', () => {
+            resolve(peerClient)
+        }))
+    }
+
+    async asyncConnect(peerId: string, options?: PeerConnectOption): Promise<DataConnection> {
+        const dataConnection = this.connect(peerId, options)
+
+        return new Promise<DataConnection>(resolve => dataConnection.on('open', () => {
+            console.log(`connection to ${peerId} established`)
+
+            resolve(dataConnection)
+        }))
+    }
+
+    async joinLobby(lobbyId: string) {
+
+    }
 }
 
-async function connectToPeer(peer: Peer, id: string) {
-    const conn = peer.connect(id)
+// Peer Test
+async function testPeer() {
+    const peer = await PeerClient.initialize()
 
-    return new Promise<DataConnection>(resolve => conn.on('open', () => {
-        console.log(`connection to ${id} established`)
-        resolve(conn)
-    }))
-}
+    const peer2 = await PeerClient.initialize()
+    const dataConnection = await peer.asyncConnect(peer2.id)
+    const data = prompt('Message', 'Hi!')
 
-function sendData(dataConnection: DataConnection, data: any) {
     dataConnection.send(data)
 }
-
-establishPeerjsConnection().then(async (peer) => {
-    console.log(peer.id)
-
-    //const username = prompt('other username')!
-    const peer2 = await establishPeerjsConnection()
-
-    const dataConnection = await connectToPeer(peer, peer2.id)
-
-    const data = prompt('Message', 'Hi!')
-    sendData(dataConnection, data)
-})
-
-/*
-
-peer.on('open', () => {
-    console.log(peer)
-
-    const conn = peer.connect(username2!)
-    conn.send('hi')
-
-    conn.on('open', () => {
-        console.log('connection established')
-    })
-
-    conn.on('data', (data) => {
-        console.log(data)
-    })
-})
-
-peer.on('connection', (dataConnection) => {
-    console.log(dataConnection)
-})
- */
-
 
 let moveUp = false
 let moveDown = false
