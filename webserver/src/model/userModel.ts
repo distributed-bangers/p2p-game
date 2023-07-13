@@ -1,10 +1,5 @@
 import { Schema, model } from 'mongoose';
-
-interface IUser {
-    username: string;
-    password: string;
-    createdDate: Date;
-}
+import {IUser} from "../index";
 
 const userSchema = new Schema<IUser>({
     username : {

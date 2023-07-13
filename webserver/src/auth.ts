@@ -1,10 +1,8 @@
 import {NextFunction, Request, Response} from "express";
-import  jwt, {Secret,JwtPayload} from "jsonwebtoken";
+import  jwt, {Secret} from "jsonwebtoken";
 import crypto from "crypto";
+import {CustomRequest} from "./index";
 
-interface CustomRequest extends Request {
-    payload: string | JwtPayload | undefined;
-}
  export const authenticateJWT = (req:Request, res:Response, next:NextFunction) => {
     const authHeader = req.headers.authorization;
     const accessTokenSecret:Secret = process.env.TOKEN_SECRET!
@@ -12,9 +10,9 @@ interface CustomRequest extends Request {
         const token = authHeader.split(' ')[1];
         jwt.verify(token, accessTokenSecret!, (err, payload) => {
             if (err) {
-                return res.sendStatus(403);
+                return res.sendStatus(401);
             }
-            (req as CustomRequest).payload = payload;
+            (req as CustomRequest).tokenPayload = payload;
             next();
         });
     } else {

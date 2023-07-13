@@ -1,30 +1,7 @@
-import User from "../model/userModel";
-import {createUserAsync, loginUserAsync} from "../services/userServices";
+import {createUserAsync, getOneUserAsync, loginUserAsync} from "../services/userServices";
 import {Request, Response} from "express";
-import * as crypto from "crypto";
+import {IUser, TypedRequestQuery} from "../index";
 
-
-// export  async function createUserAsyncare(req:Request, res: Response):Promise<void> {
-//     try {
-//         const user = new User({
-//             username: req.body.username,
-//             password: crypto.createHash("sha256",).update(req.body.password,"utf-8").digest("hex"),
-//             createdDate: new Date()
-//         })
-//         await user.save();
-//
-//         res.status(201).json({
-//             status: "success",
-//             token: generateJWT(user.username)
-//         });
-//     } catch (error: any) {
-//         res.status(400).json({
-//             status: "fail",
-//             message: error.message,
-//         }
-//         );
-//     }
-// }
 
 export const signIn = async (req:Request, res: Response) => {
     try {
@@ -47,6 +24,21 @@ export const login = async (req: Request, res: Response) => {
         res.status(201).json({
             status: "success",
             token: token
+        });
+    } catch (error: any) {
+        res.status(400).json({
+            status: "fail",
+            message: error.message,
+        })}
+};
+
+export const getOneUser = async(req :TypedRequestQuery<{id:string}>, res: Response):Promise<void> => {
+    try {
+        console.log(req.query.id)
+        const user: IUser = <IUser>await getOneUserAsync(req.query.id);
+        res.status(201).json({
+            status: "success",
+            username: user.username
         });
     } catch (error: any) {
         res.status(400).json({
