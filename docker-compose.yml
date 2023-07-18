@@ -1,4 +1,9 @@
 version: '3.1'
+networks:
+  backend:
+    driver: bridge
+
+
 
 services:
 
@@ -9,14 +14,37 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
     ports:
-      - 27017:27017
+      - "27017:27017"
+    networks:
+      - backend
 
   mongo-express:
     image: mongo-express
     restart: always
     ports:
-      - 8081:8081
+      - "8081:8081"
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: example
       ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+
+  user_verwaltung_server:
+    build:
+      context: ./webserver/
+      dockerfile: Dockerfile
+    depends_on:
+      - mongo
+    volumes:
+      - .:/src
+    command: npm start
+    ports:
+      - "3000:8080"
+    environment:
+      NODE_ENV: development
+      PORT : 8080
+      DATABASE : mongodb://root:<PASSWORD>@mongo:27017/admin
+      DATABASE_USERNAME: root
+      DATABASE_PASSWORD: example
+      TOKEN_SECRET: 4ecb7c5a013cf78fd10bcc91b8ff73f779b77fa500f03c4485831bcd5c8601af
+    networks:
+      - backend
