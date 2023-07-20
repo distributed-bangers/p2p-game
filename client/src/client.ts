@@ -1,15 +1,74 @@
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import PeerClient from './peerClient'
+import { DataConnection } from 'peerjs'
 
+interface PlayerState {
+    moveUp: boolean
+    moveDown: boolean
+    moveLeft: boolean
+    moveRight: boolean
+    shoot: boolean
+    shootCooldown: number
+}
 
-let moveUp = false
-let moveDown = false
-let moveLeft = false
-let moveRight = false
-let shoot = false
-let shootCooldown = 0
+interface GameState {
+    [playerId: string]: Player
+}
 
 const enemies: Player[] = []
+
+class GameClient {
+    id: string
+    private peerClient: PeerClient
+    player: Player
+    peers: DataConnection[] = []
+    state: GameState = {}
+
+    private constructor(peerClient: PeerClient) {
+        this.peerClient = peerClient
+        this.peerClient.on('connection', (dataConnection) => {
+            this.onConnection(dataConnection)
+        })
+
+        this.id = peerClient.id
+
+        this.player = new Player('blue')
+        this.state[this.id] = this.player
+        scene.add(this.player)
+    }
+
+    static async initialize() {
+        const peerClient = await PeerClient.initialize()
+        return new GameClient(peerClient)
+    }
+
+    private onConnection(dataConnection: DataConnection) {
+        this.peers.push(dataConnection)
+        dataConnection.on('data', data => this.updateState(dataConnection.peer, data as PlayerState))
+
+        const player = new Player('red')
+        this.state[dataConnection.peer] = player
+        scene.add(player)
+    }
+
+    async connect(id: string) {
+        const dataConnection = await this.peerClient.asyncConnect(id)
+
+        this.onConnection(dataConnection)
+    }
+
+    publishState() {
+        for (const peer of this.peers) {
+            //console.log(`Publishing State of Player ${this.id}: ${this.player.state}`)
+            peer.send(this.player.state)
+        }
+    }
+
+    updateState(playerId: string, playerState: PlayerState) {
+        //console.log(`Updating State of Player ${playerId}: ${playerState}`)
+        this.state[playerId].state = playerState
+    }
+}
 
 class Bullet extends THREE.Mesh {
     constructor() {
@@ -30,8 +89,16 @@ class Gun extends THREE.Mesh {
 }
 
 class Player extends THREE.Mesh {
-    gun: Gun
     bullets: Bullet[] = []
+    gun: Gun
+    state: PlayerState = {
+        moveUp: false,
+        moveDown: false,
+        moveLeft: false,
+        moveRight: false,
+        shoot: false,
+        shootCooldown: 0,
+    }
 
     constructor(color: THREE.ColorRepresentation) {
         const playerGeometry = new THREE.CapsuleGeometry(1, 1, 4, 8)
@@ -91,29 +158,37 @@ function render() {
     renderer.render(scene, camera)
 }
 
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight
+    camera.updateProjectionMatrix()
+    renderer.setSize(window.innerWidth, window.innerHeight)
+    render()
+}
+
+
 function onKeyDown(event: KeyboardEvent) {
     switch (event.code) {
         case 'ArrowUp':
         case 'KeyW':
-            moveUp = true
+            gameClient.player.state.moveUp = true
             break
 
         case 'ArrowLeft':
         case 'KeyA':
-            moveLeft = true
+            gameClient.player.state.moveLeft = true
             break
 
         case 'ArrowDown':
         case 'KeyS':
-            moveDown = true
+            gameClient.player.state.moveDown = true
             break
 
         case 'ArrowRight':
         case 'KeyD':
-            moveRight = true
+            gameClient.player.state.moveRight = true
             break
         case 'Space':
-            shoot = true
+            gameClient.player.state.shoot = true
             break
     }
 }
@@ -123,35 +198,28 @@ function onKeyUp(event: KeyboardEvent) {
 
         case 'ArrowUp':
         case 'KeyW':
-            moveUp = false
+            gameClient.player.state.moveUp = false
             break
 
         case 'ArrowLeft':
         case 'KeyA':
-            moveLeft = false
+            gameClient.player.state.moveLeft = false
             break
 
         case 'ArrowDown':
         case 'KeyS':
-            moveDown = false
+            gameClient.player.state.moveDown = false
             break
 
         case 'ArrowRight':
         case 'KeyD':
-            moveRight = false
+            gameClient.player.state.moveRight = false
             break
 
         case 'Space':
-            shoot = false
+            gameClient.player.state.shoot = false
             break
     }
-}
-
-function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight
-    camera.updateProjectionMatrix()
-    renderer.setSize(window.innerWidth, window.innerHeight)
-    render()
 }
 
 // Scene
@@ -172,65 +240,78 @@ document.body.appendChild(renderer.domElement)
 // Objects
 createBackground()
 
-const player = new Player('red')
-scene.add(player)
+let gameClient: GameClient
+GameClient.initialize().then(async client => {
+        gameClient = client
+        document.addEventListener('keydown', onKeyDown)
+        document.addEventListener('keyup', onKeyUp)
+        const otherClient = prompt('other user', '')
+        if (otherClient!.length > 0) {
+            await gameClient.connect(otherClient!)
+        }
+
+        animate()
+    },
+)
+
 
 // Event Listeners
 window.addEventListener('resize', onWindowResize, false)
-document.addEventListener('keydown', onKeyDown)
-document.addEventListener('keyup', onKeyUp)
 
 // Helper
 const axesHelper = new THREE.AxesHelper(200)
 scene.add(axesHelper)
-createTestEnvironment()
+
+// createTestEnvironment()
 
 function animate() {
     requestAnimationFrame(animate)
-    shootCooldown -= 1
+    gameClient.publishState()
 
-    if (moveUp) {
-        player.translateZ(0.15)
-    }
-    if (moveDown) {
-        player.translateZ(-0.15)
-    }
-    if (moveLeft) {
-        // player.translateX(-0.1)
-        player.rotateY(0.06)
-    }
-    if (moveRight) {
-        // player.translateX(0.1)
-        player.rotateY(-0.06)
-    }
-    if (shoot && shootCooldown <= 0) {
-        player.shoot()
-        shootCooldown = 60
-    }
+    for (let player of Object.values(gameClient.state)) {
+        player.state.shootCooldown -= 1
 
-    for (const bullet of player.bullets) {
-        bullet.translateZ(0.5)
+        if (player.state.moveUp) {
+            player.translateZ(0.15)
+        }
+        if (player.state.moveDown) {
+            player.translateZ(-0.15)
+        }
+        if (player.state.moveLeft) {
+            // player.translateX(-0.1)
+            player.rotateY(0.06)
+        }
+        if (player.state.moveRight) {
+            // player.translateX(0.1)
+            player.rotateY(-0.06)
+        }
+        if (player.state.shoot && player.state.shootCooldown <= 0) {
+            player.shoot()
+            player.state.shootCooldown = 60
+        }
 
-        const direction = new THREE.Vector3()
-        bullet.getWorldDirection(direction)
-        raycaster.set(bullet.position, direction)
-        const collisionResults = raycaster.intersectObjects(enemies)
+        for (const bullet of player.bullets) {
+            bullet.translateZ(0.5)
 
-        if (collisionResults.length > 0 && collisionResults[0].distance < 0.5) {
-            enemies[0].material = new THREE.MeshBasicMaterial({ color: 'green' })
+            const direction = new THREE.Vector3()
+            bullet.getWorldDirection(direction)
+            raycaster.set(bullet.position, direction)
+            const collisionResults = raycaster.intersectObjects(enemies)
+
+            if (collisionResults.length > 0 && collisionResults[0].distance < 0.5) {
+                enemies[0].material = new THREE.MeshBasicMaterial({ color: 'green' })
+            }
         }
     }
 
     // const relativeCameraOffset = new THREE.Vector3(0, 20, 5)
     // const cameraOffset = relativeCameraOffset.applyMatrix4(player.matrixWorld)
 
-    camera.position.x = player.position.x
-    camera.position.y = player.position.y + 20
-    camera.position.z = player.position.z + 5
+    camera.position.x = gameClient.player.position.x
+    camera.position.y = gameClient.player.position.y + 20
+    camera.position.z = gameClient.player.position.z + 5
 
     // controls.update()
 
     render()
 }
-
-animate()

@@ -1,18 +1,15 @@
 import { DataConnection, Peer, PeerConnectOption } from 'peerjs'
 
-class PeerClient extends Peer {
-    private constructor() {
-        super()
-
-        this.on('connection',
-            dataConnection => dataConnection.on('data', data => console.log(`peer ${this.id} received ${data}`)),
-        )
+export default class PeerClient extends Peer {
+    private constructor(id = '') {
+        super(id)
     }
 
-    static async initialize(): Promise<PeerClient> {
-        const peerClient = new PeerClient()
+    static async initialize(id?: string): Promise<PeerClient> {
+        const peerClient = new PeerClient(id)
 
         return new Promise(resolve => peerClient.on('open', () => {
+            console.log(`peer id is ${peerClient.id}`)
             resolve(peerClient)
         }))
     }
