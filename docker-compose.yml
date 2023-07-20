@@ -1,36 +1,21 @@
 version: '3.1'
 networks:
-  backend:
+  userservice:
     driver: bridge
-
+  gameservice:
+    driver: bridge
+  db:
+    driver: bridge
+  peerserver:
+    driver: bridge
 
 
 services:
 
-  mongo:
-    image: mongo
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
-    ports:
-      - "27017:27017"
-    networks:
-      - backend
-
-  mongo-express:
-    image: mongo-express
-    restart: always
-    ports:
-      - "8081:8081"
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: example
-      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
-
-  user_verwaltung_server:
+  userservice:  
+    container_name: userservice
     build:
-      context: ./webserver/
+      context: ./userservice/
       dockerfile: Dockerfile
     depends_on:
       - mongo
@@ -42,9 +27,42 @@ services:
     environment:
       NODE_ENV: development
       PORT : 8080
-      DATABASE : mongodb://root:<PASSWORD>@mongo:27017/admin
+      DATABASE : mongodb://root:<PASSWORD>@mongo:27017
       DATABASE_USERNAME: root
       DATABASE_PASSWORD: example
       TOKEN_SECRET: 4ecb7c5a013cf78fd10bcc91b8ff73f779b77fa500f03c4485831bcd5c8601af
     networks:
-      - backend
+      - userservice
+
+# here gameservice to be added
+
+  mongo:
+    container_name: mongo
+    image: mongo:latest
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - "27017:27017"
+    networks:
+      - db
+
+  mongo-express:
+    container_name: mongo-express
+    image: mongo-express:latest
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017
+    depends_on:
+      - mongo
+    networks:
+      - db
+
+  peerserver:
+    container_name: peerserver
+    image: peerjs/peerjs-server:latest
+    ports:
+      - "9000:9000"
