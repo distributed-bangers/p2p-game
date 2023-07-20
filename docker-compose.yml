@@ -1,13 +1,11 @@
 version: '3.1'
-# networks:
-#   userservice:
-#     driver: bridge
-#   gameservice:
-#     driver: bridge
-#   db:
-#     driver: bridge
-#   peerserver:
-#     driver: bridge
+networks:
+  userservice:
+    driver: bridge
+  gameservice:
+    driver: bridge
+  db:
+    driver: bridge
 
 volumes:
   mongodb_data:
@@ -29,14 +27,14 @@ services:
     environment:
       NODE_ENV: development
       PORT: 8080
-      DATABASE: mongodb://root:<PASSWORD>@mongo:27017/users
-      DATABASE_USERNAME: root
-      DATABASE_PASSWORD: example
+      DATABASE: mongodb://us_admin:<PASSWORD>@mongo:27017/userservice
+      DATABASE_USERNAME: us_admin
+      DATABASE_PASSWORD: root
       TOKEN_SECRET: 4ecb7c5a013cf78fd10bcc91b8ff73f779b77fa500f03c4485831bcd5c8601af
-    # networks:
-    #   - db
+    networks:
+      - userservice
 
-  # here gameservice to be added
+  # //! here gameservice to be added
 
   mongo:
     container_name: mongo
@@ -47,8 +45,10 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: example
     ports:
       - '27017:27017'
-    # networks:
-    #   - db
+    networks:
+      - db
+      - userservice
+      - gameservice
     volumes:
       - mongodb_data:/data/db
       - mongodb_configdata:/data/configdb
@@ -64,8 +64,8 @@ services:
       ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017
     depends_on:
       - mongo
-    # networks:
-    #   - db
+    networks:
+      - db
 
   peerserver:
     container_name: peerserver

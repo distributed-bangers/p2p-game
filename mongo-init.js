@@ -1,24 +1,36 @@
+db = new Mongo().getDB('userservice');
+
+db.createCollection('users', { capped: false });
+
+// db.users.insert([
+//   { username: 'sandesh', password: '1234', date: '2000-01-01' },
+//   { username: 'sandesh', password: '1234', date: '2000-01-01' },
+//   { username: 'sandesh', password: '1234', date: '2000-01-01' },
+//   { username: 'sandesh', password: '1234', date: '2000-01-01' },
+// ]);
+
 db.createUser({
-  user: 'gameservice',
-  pwd: 'gameservice',
+  user: 'us_admin',
+  pwd: 'root',
   roles: [
     {
       role: 'readWrite',
-      db: 'games',
+      db: 'userservice',
     },
   ],
 });
 
+db = new Mongo().getDB('gameservice');
+
+db.createCollection('games', { capped: false });
+
 db.createUser({
-  user: 'userservice',
-  pwd: 'userservice',
+  user: 'gs_admin',
+  pwd: 'root',
   roles: [
     {
       role: 'readWrite',
-      db: 'users',
+      db: 'gameservice',
     },
   ],
 });
-
-db = new Mongo().getDB('games');
-db = new Mongo().getDB('users');

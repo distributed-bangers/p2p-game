@@ -17,5 +17,5 @@ mongoose
   .then(() => console.log('DB connection successful'));
 
 const server = app.listen(port, () => {
-  console.log(`Server is listening on port ${port}`);
+  console.log(`gameservice is listening on port ${port}`);
 });
