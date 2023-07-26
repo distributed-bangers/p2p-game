@@ -24,16 +24,12 @@ export const authenticateJWT = (
     }
 }
 
-export const generateJWT = (username: string): string => {
-    const accessTokenSecret: Secret = process.env.TOKEN_SECRET!
-    return jwt.sign(
-        { username: username, userid: username },
-        accessTokenSecret,
-        {
-            expiresIn: '1 days',
-        }
-    )
-}
+export const generateJWT = (id :string,username: string): string => {
+  const accessTokenSecret: Secret = process.env.TOKEN_SECRET!;
+  return jwt.sign({ _id:id,username: username }, accessTokenSecret, {
+    expiresIn: '1 days',
+  });
+};
 
 export function createHash(salt : string,password: string): string {
   return crypto

@@ -13,7 +13,7 @@ export async function loginUserAsync(body: any) {
     throw new Error("User doesn't exists!");
   } else if (user.password == createHash(user.salt,password)) {
     try {
-      const token = generateJWT(username);
+      const token = generateJWT(user._id.toString(), user.username);
       return token!;
     } catch (error) {
       throw error;
@@ -25,6 +25,7 @@ export async function loginUserAsync(body: any) {
 
 export async function createUserAsync(body: any): Promise<string> {
   let { username, password } = body;
+  console.log(body)
   if (!username || !password) {
     throw new Error('Bad request');
   }
@@ -42,7 +43,7 @@ export async function createUserAsync(body: any): Promise<string> {
         createdDate: new Date(),
       });
       await user.save();
-      const token = generateJWT(user.username);
+      const token = generateJWT(user.id, user.username);
       return token!;
     } catch (error) {
       throw error;

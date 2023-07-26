@@ -7,8 +7,8 @@ import express, { urlencoded, json } from 'express';
 
 const app = express()
 
-app.use(urlencoded({ extended: true }))
-app.use(`${apiURL}/games`, userRoutes)
 app.use(json());
+app.use(urlencoded({ extended: true }))
+app.use(`${apiURL}/user/`, userRoutes)
 
 export default app
