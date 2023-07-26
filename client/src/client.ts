@@ -2,6 +2,20 @@ import * as THREE from 'three'
 import PeerClient from './peerClient'
 import { DataConnection } from 'peerjs'
 
+function isPlayerState(any: any): any is PlayerState {
+    return typeof any === 'object' && any !== null && (any as PlayerState).shootCooldown !== undefined
+}
+
+interface GameState {
+    [playerId: string]: Player
+}
+
+interface Peer {
+    id: string
+    connection: DataConnection
+    queue: PlayerState[]
+}
+
 interface PlayerState {
     moveUp: boolean
     moveDown: boolean
@@ -11,17 +25,12 @@ interface PlayerState {
     shootCooldown: number
 }
 
-interface GameState {
-    [playerId: string]: Player
-}
-
-const enemies: Player[] = []
-
 class GameClient {
-    id: string
     private peerClient: PeerClient
-    player: Player
-    peers: DataConnection[] = []
+
+    id: string
+    player: Player = new Player('blue')
+    peers: Peer[] = []
     state: GameState = {}
 
     private constructor(peerClient: PeerClient) {
@@ -31,8 +40,6 @@ class GameClient {
         })
 
         this.id = peerClient.id
-
-        this.player = new Player('blue')
         this.state[this.id] = this.player
         scene.add(this.player)
     }
@@ -43,11 +50,17 @@ class GameClient {
     }
 
     private onConnection(dataConnection: DataConnection) {
-        this.peers.push(dataConnection)
-        dataConnection.on('data', data => this.updateState(dataConnection.peer, data as PlayerState))
-
+        const peer: Peer = { id: dataConnection.peer, connection: dataConnection, queue: [] }
+        dataConnection.on('data', (data) => {
+            if (isPlayerState(data)) {
+                peer.queue.push(data as PlayerState)
+            } else {
+                console.error('Received data in wrong format:', data)
+            }
+        })
+        this.peers.push(peer)
         const player = new Player('red')
-        this.state[dataConnection.peer] = player
+        this.state[peer.id] = player
         scene.add(player)
     }
 
@@ -57,34 +70,38 @@ class GameClient {
         this.onConnection(dataConnection)
     }
 
+    async getInputs() {
+        const promises = []
+
+        for (const peer of this.peers) {
+            promises.push(new Promise<PlayerState>((resolve) => {
+                if (peer.queue.length > 0) {
+                    resolve(peer.queue.shift() as PlayerState)
+                } else {
+                    peer.connection.once('data', (data) => {
+                        resolve(data as PlayerState)
+                    })
+                }
+            }).then(value => {
+                this.updateState(peer.id, value)
+            }).catch(reason => console.error(reason)))
+        }
+
+        this.publishState()
+
+        await Promise.all(promises)
+    }
+
     publishState() {
         for (const peer of this.peers) {
             //console.log(`Publishing State of Player ${this.id}: ${this.player.state}`)
-            peer.send(this.player.state)
+            peer.connection.send(this.player.state)
         }
     }
 
     updateState(playerId: string, playerState: PlayerState) {
         //console.log(`Updating State of Player ${playerId}: ${playerState}`)
         this.state[playerId].state = playerState
-    }
-}
-
-class Bullet extends THREE.Mesh {
-    constructor() {
-        const bulletGeometry = new THREE.SphereGeometry(0.1)
-        const bulletMaterial = new THREE.MeshBasicMaterial({ color: 'red' })
-
-        super(bulletGeometry, bulletMaterial)
-    }
-}
-
-class Gun extends THREE.Mesh {
-    constructor() {
-        const gunGeometry = new THREE.CylinderGeometry(0.2, 0.2, 1)
-        const gunMaterial = new THREE.MeshBasicMaterial({ color: 'black' })
-
-        super(gunGeometry, gunMaterial)
     }
 }
 
@@ -130,6 +147,24 @@ class Player extends THREE.Mesh {
     }
 }
 
+class Gun extends THREE.Mesh {
+    constructor() {
+        const gunGeometry = new THREE.CylinderGeometry(0.2, 0.2, 1)
+        const gunMaterial = new THREE.MeshBasicMaterial({ color: 'black' })
+
+        super(gunGeometry, gunMaterial)
+    }
+}
+
+class Bullet extends THREE.Mesh {
+    constructor() {
+        const bulletGeometry = new THREE.SphereGeometry(0.1)
+        const bulletMaterial = new THREE.MeshBasicMaterial({ color: 'red' })
+
+        super(bulletGeometry, bulletMaterial)
+    }
+}
+
 function createBackground() {
     const backgroundGeometry = new THREE.PlaneGeometry(100, 100)
     const backgroundMaterial = new THREE.MeshBasicMaterial()
@@ -146,12 +181,6 @@ function createCamera() {
     camera.position.z = 5
     camera.lookAt(0, 0, 0)
     return camera
-}
-
-function createTestEnvironment() {
-    const dummy = new Player('blue')
-    scene.add(dummy)
-    enemies.push(dummy)
 }
 
 function render() {
@@ -240,6 +269,13 @@ document.body.appendChild(renderer.domElement)
 // Objects
 createBackground()
 
+// Event Listeners
+window.addEventListener('resize', onWindowResize, false)
+
+// Helper
+const axesHelper = new THREE.AxesHelper(200)
+scene.add(axesHelper)
+
 let gameClient: GameClient
 GameClient.initialize().then(async client => {
         gameClient = client
@@ -248,28 +284,23 @@ GameClient.initialize().then(async client => {
         const otherClient = prompt('other user', '')
         if (otherClient!.length > 0) {
             await gameClient.connect(otherClient!)
+            // await gameClient.startGame()
         }
 
         animate()
     },
 )
 
-
-// Event Listeners
-window.addEventListener('resize', onWindowResize, false)
-
-// Helper
-const axesHelper = new THREE.AxesHelper(200)
-scene.add(axesHelper)
-
-// createTestEnvironment()
-
-function animate() {
+async function animate() {
     requestAnimationFrame(animate)
-    gameClient.publishState()
+    await gameClient.getInputs()
 
-    for (let player of Object.values(gameClient.state)) {
-        player.state.shootCooldown -= 1
+    for (const id of Object.keys(gameClient.state)) {
+        const player = gameClient.state[id]
+
+        if (player.state.shootCooldown > 0) {
+            player.state.shootCooldown -= 1
+        }
 
         if (player.state.moveUp) {
             player.translateZ(0.15)
@@ -285,31 +316,40 @@ function animate() {
             // player.translateX(0.1)
             player.rotateY(-0.06)
         }
-        if (player.state.shoot && player.state.shootCooldown <= 0) {
+        if (player.state.shoot && player.state.shootCooldown === 0) {
             player.shoot()
             player.state.shootCooldown = 60
         }
 
-        for (const bullet of player.bullets) {
-            bullet.translateZ(0.5)
+        const enemies: Player[] = []
 
+        for (const peer in gameClient.state) {
+            if (peer !== id) {
+                enemies.push(gameClient.state[peer])
+            }
+        }
+
+        for (const bullet of player.bullets) {
             const direction = new THREE.Vector3()
+            bullet.translateZ(0.5)
             bullet.getWorldDirection(direction)
             raycaster.set(bullet.position, direction)
-            const collisionResults = raycaster.intersectObjects(enemies)
 
-            if (collisionResults.length > 0 && collisionResults[0].distance < 0.5) {
-                enemies[0].material = new THREE.MeshBasicMaterial({ color: 'green' })
+            for (const enemy of enemies) {
+                const collisionResults = raycaster.intersectObject(enemy)
+
+                if (collisionResults.length > 0 && collisionResults[0].distance < 0.5) {
+                    enemy.material = new THREE.MeshBasicMaterial({ color: 'green' })
+                }
             }
         }
     }
 
-    // const relativeCameraOffset = new THREE.Vector3(0, 20, 5)
-    // const cameraOffset = relativeCameraOffset.applyMatrix4(player.matrixWorld)
-
+    /*
     camera.position.x = gameClient.player.position.x
     camera.position.y = gameClient.player.position.y + 20
     camera.position.z = gameClient.player.position.z + 5
+    */
 
     // controls.update()
 
