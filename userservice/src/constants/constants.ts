@@ -13,6 +13,10 @@ export enum responseStatus {
     /** Bad Request */
     BadRequest = 400,
 
+    /** Unauthorized */
+
+    Unauthorized = 401,
+
     /** Not Found */
     NotFound = 404,
 
