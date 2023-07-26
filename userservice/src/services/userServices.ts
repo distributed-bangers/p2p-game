@@ -13,7 +13,7 @@ export async function loginUserAsync(body: any) {
     throw new Error("User doesn't exists!");
   } else if (user.password == createHash(user.salt,password)) {
     try {
-      const token = generateJWT(user._id.toString(), user.username);
+      const token = generateJWT(user);
       return token!;
     } catch (error) {
       throw error;
@@ -43,7 +43,7 @@ export async function createUserAsync(body: any): Promise<string> {
         createdDate: new Date(),
       });
       await user.save();
-      const token = generateJWT(user.id, user.username);
+      const token = generateJWT(user);
       return token!;
     } catch (error) {
       throw error;

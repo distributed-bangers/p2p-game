@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express'
 import jwt, { Secret } from 'jsonwebtoken'
 import crypto from 'crypto'
-import { CustomRequest } from './index.js'
+import { CustomRequest, IUser } from './index.js'
 
 export const authenticateJWT = (
     req: Request,
@@ -24,16 +24,20 @@ export const authenticateJWT = (
     }
 }
 
-export const generateJWT = (id :string,username: string): string => {
-  const accessTokenSecret: Secret = process.env.TOKEN_SECRET!;
-  return jwt.sign({ _id:id,username: username }, accessTokenSecret, {
-    expiresIn: '1 days',
-  });
-};
+export const generateJWT = (user: IUser): string => {
+    const accessTokenSecret: Secret = process.env.TOKEN_SECRET!
+    return jwt.sign(
+        { userid: user._id.toString(), username: user.username },
+        accessTokenSecret,
+        {
+            expiresIn: '1 days',
+        }
+    )
+}
 
-export function createHash(salt : string,password: string): string {
-  return crypto
-      .createHash('sha256')
-      .update(salt.concat(password), 'utf-8')
-      .digest('hex');
+export function createHash(salt: string, password: string): string {
+    return crypto
+        .createHash('sha256')
+        .update(salt.concat(password), 'utf-8')
+        .digest('hex')
 }
