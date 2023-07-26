@@ -31,6 +31,9 @@ export const generateJWT = (username: string): string => {
   });
 };
 
-export function createHash(password: string): string {
-  return crypto.createHash('sha256').update(password, 'utf-8').digest('hex');
+export function createHash(salt : string,password: string): string {
+  return crypto
+      .createHash('sha256')
+      .update(salt.concat(password), 'utf-8')
+      .digest('hex');
 }

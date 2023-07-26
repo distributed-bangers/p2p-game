@@ -45,7 +45,13 @@ export const getOneUser = async (
     const user: IUser = <IUser>await getOneUserAsync(req.query.id);
     res.status(201).json({
       status: 'success',
+        user:
+    {
+      id: user._id,
       username: user.username,
+      createdDate: user.createdDate
+    }
+
     });
   } catch (error: any) {
     res.status(400).json({

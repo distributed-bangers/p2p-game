@@ -1,6 +1,7 @@
 import {Request} from "express";
 import {JwtPayload} from "jsonwebtoken";
 import { Query } from 'express-serve-static-core';
+import mongoose from "mongoose";
 
 
 export interface TypedRequest<T extends Query, U> extends Express.Request {
@@ -19,7 +20,9 @@ export interface CustomRequest extends Request {
 }
 
 export interface IUser {
+    _id: mongoose.Types.ObjectId
     username: string;
+    salt: string;
     password: string;
     createdDate: Date;
 }
