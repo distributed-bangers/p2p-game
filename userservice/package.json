@@ -4,6 +4,11 @@
   "description": "",
   "main": "src/server.ts",
   "type": "module",
+  "nodemonConfig": {
+    "env" : {
+      "NODE_CONFIG_DIR" : "./src/config/"
+    }
+  },
   "scripts": {
     "start": "set NODE_CONFIG_DIR=./src/config && nodemon"
   },
