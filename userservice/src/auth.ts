@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express'
 import jwt, { Secret } from 'jsonwebtoken'
 import crypto from 'crypto'
 import { CustomRequest, IUser } from './index.js'
+import c from 'config'
 
 export const authenticateJWT = (
     req: Request,
@@ -9,7 +10,7 @@ export const authenticateJWT = (
     next: NextFunction
 ) => {
     const authHeader = req.headers.authorization
-    const accessTokenSecret: Secret = process.env.TOKEN_SECRET!
+    const accessTokenSecret: Secret = c.get("token_secret")!
     if (authHeader) {
         const token = authHeader.split(' ')[1]
         jwt.verify(token, accessTokenSecret!, (err, payload) => {
@@ -25,7 +26,7 @@ export const authenticateJWT = (
 }
 
 export const generateJWT = (user: IUser): string => {
-    const accessTokenSecret: Secret = process.env.TOKEN_SECRET!
+    const accessTokenSecret: Secret =c.get("token_secret")!
     return jwt.sign(
         { userid: user._id.toString(), username: user.username },
         accessTokenSecret,

@@ -11,7 +11,7 @@ db.createCollection('users', { capped: false });
 
 db.createUser({
   user: 'us_admin',
-  pwd: 'root',
+  pwd: 'jFRBDfG-lAz8yXA',
   roles: [
     {
       role: 'readWrite',

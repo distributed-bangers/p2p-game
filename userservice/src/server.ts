@@ -1,21 +1,15 @@
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
 import app from './app.js';
-dotenv.config({ path: './src/config.env' });
+import config from 'config';
 
-const DBConnection = process.env.DATABASE!.replace(
-  '<PASSWORD>',
-  process.env.DATABASE_PASSWORD!
-);
-
-console.log(DBConnection);
+const DBConnection = <string>config.get('db.conn_string');
+const port = <number>config.get('server.port');
 
 mongoose
   .connect(DBConnection)
   .then(() => console.log('DB connection successful'));
 
-const port = process.env.PORT;
 
 app.listen(port, () => {
-  console.log(`userservice is listening on port ${port}`);
+  console.log(`userservice is listening on port :${port}`);
 });
