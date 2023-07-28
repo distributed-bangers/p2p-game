@@ -1,160 +1,150 @@
-import { NextFunction, Request, Response } from 'express';
-import { responseStatus, jrestStatus } from '../constants/constants.js';
+import { NextFunction, Request, Response } from 'express'
+import { responseStatus, jrestStatus } from '../constants/constants.js'
 import {
-  NotFoundError,
-  PlayerFoundError,
-  PlayerNotFoundError,
-} from '../errors/errors.js';
-import { createGame, getAllGames } from '../services/gameService.js';
+    NotFoundError,
+    PlayerFoundError,
+    PlayerNotFoundError,
+} from '../errors/errors.js'
+import {
+    createGame,
+    finishGame,
+    getAllGames,
+    joinGame,
+    leaveGame,
+    removeGame,
+    startGame,
+} from '../services/gameService.js'
 
 export async function getGames(req: Request, res: Response) {
-  try {
-    const games = await getAllGames();
-    res.status(responseStatus.OK).json({
-      status: jrestStatus.success,
-      results: games.length,
-      data: { games: games },
-    });
-  } catch (error: any) {
-    //* Hier kann auf unterschiedliche Exceptions unterschiedlich eingegangen werden
-    res.status(responseStatus.NotFound).json({
-      status: jrestStatus.fail,
-      message: error.message,
-    });
-  }
+    try {
+        const games = await getAllGames(req)
+        res.status(responseStatus.OK).json({
+            status: jrestStatus.success,
+            results: games.length,
+            data: { games: games },
+        })
+    } catch (error: any) {
+        res.status(responseStatus.NotFound).json({
+            status: jrestStatus.fail,
+            message: error.message,
+        })
+    }
 }
 
 export async function postGames(req: Request, res: Response) {
-  try {
-    //* TODO: Überprüfen, ob der Spieler bereits ein Spiel offen hat
-    //* SOCKET Verbindung zum Host aufbauen
+    try {
+        //* TODO: Überprüfen, ob der Spieler bereits ein Spiel offen hat?!
+        //* SOCKET Verbindung zum Host aufbauen
 
-    const newGame = await createGame(req);
+        const newGame = await createGame(req)
 
-    res.status(responseStatus.OK).json({
-      status: jrestStatus.success,
-      data: {
-        game: newGame,
-      },
-    });
-  } catch (error: any) {
-    res.status(responseStatus.BadRequest).json({
-      status: jrestStatus.fail,
-      message: error.message,
-    });
-  }
+        res.status(responseStatus.OK).json({
+            status: jrestStatus.success,
+            data: {
+                game: newGame,
+            },
+        })
+    } catch (error: any) {
+        res.status(responseStatus.BadRequest).json({
+            status: jrestStatus.fail,
+            message: error.message,
+        })
+    }
 }
 
-// export async function joinGame(req: Request, res: Response) {
-//   try {
-//     //* TODO: Send all players messages, when another player joins
-//     //* WEBSOCKET needed
-//     const gameId = req.params.id;
-//     const playername: string = req.body.player;
-//     const indexToReplace = games.findIndex((game) => game.id === gameId);
+export async function putGameJoin(req: Request, res: Response) {
+    try {
+        //* TODO: Send all players messages, when another player joins
+        //* WEBSOCKET needed
+        const updatedGame = await joinGame(req)
 
-//     const playerIsInGame = games.some((game) =>
-//       game.players.includes(playername)
-//     );
+        res.status(responseStatus.OK).json({
+            status: jrestStatus.success,
+            data: {
+                game: updatedGame,
+            },
+        })
+    } catch (error: any) {
+        res.status(responseStatus.BadRequest).json({
+            status: jrestStatus.fail,
+            message: error.message,
+        })
+    }
+}
 
-//     if (playerIsInGame)
-//       throw new PlayerFoundError(
-//         `Player with the name ${playername} is already in the game`
-//       );
+export async function putGameLeave(req: Request, res: Response) {
+    try {
+        //* TODO: Send all players messages, when another player joins
+        const updatedGame = await leaveGame(req)
 
-//     if (indexToReplace !== -1 && indexToReplace !== undefined) {
-//       games[indexToReplace].players.push(playername);
-//       res.status(responseStatus.OK).json({
-//         status: jrestStatus.success,
-//         data: { game: games[indexToReplace] },
-//       });
-//     } else throw new NotFoundError(`Game with id ${gameId} not found`);
-//   } catch (error: any) {
-//     res.status(responseStatus.BadRequest).json({
-//       status: jrestStatus.fail,
-//       message: error.message,
-//     });
-//   }
-// }
+        res.status(responseStatus.OK).json({
+            status: jrestStatus.success,
+            data: {
+                game: updatedGame,
+            },
+        })
+    } catch (error: any) {
+        res.status(responseStatus.BadRequest).json({
+            status: jrestStatus.fail,
+            message: error.message,
+        })
+    }
+}
 
-// export async function leaveGame(req: Request, res: Response) {
-//   try {
-//     const gameId = req.params.id;
-//     const playername: string = req.body.player;
-//     const indexToReplace = games.findIndex((game) => game.id === gameId);
+export async function deleteGame(req: Request, res: Response) {
+    //* Wird gecallt, wenn der Host absichtlich ein Spiel beendet
+    //* TODO: Send all players messages, that the game was deleted
+    //* WEBSOCKET needed
+    try {
+        const gameToDelete = await removeGame(req)
 
-//     const playerIsInGame = games.some((game) =>
-//       game.players.includes(playername)
-//     );
+        res.status(responseStatus.OK).json({
+            status: jrestStatus.success,
+            data: { game: gameToDelete },
+        })
+    } catch (error: any) {
+        res.status(responseStatus.BadRequest).json({
+            status: jrestStatus.fail,
+            message: error.message,
+        })
+    }
+}
 
-//     if (!playerIsInGame)
-//       throw new PlayerNotFoundError(
-//         `Player with the name ${playername} was not found in the game`
-//       );
+export async function postGameStart(req: Request, res: Response) {
+    try {
+        //* use socket-connection to send all userIds to all players, except for their own
+        //* End Socket-Connection as soon as game starts? If yes, how to know if a client is not reachable?
+        //* If we wire up all clients with a full mesh, then a client might even be able to return and I wouldn't have to check for heartbeats
 
-//     if (indexToReplace !== -1 && indexToReplace !== undefined) {
-//       games[indexToReplace].players = games[indexToReplace].players.filter(
-//         (player) => player !== playername
-//       );
-//       res.status(responseStatus.OK).json({
-//         status: jrestStatus.success,
-//         data: { game: games[indexToReplace] },
-//       });
-//     } else throw new NotFoundError(`Game with id ${gameId} not found`);
-//   } catch (error: any) {
-//     res.status(responseStatus.BadRequest).json({
-//       status: jrestStatus.fail,
-//       message: error.message,
-//     });
-//   }
-// }
+        const gameToStart = await startGame(req)
 
-// export async function deleteGame(req: Request, res: Response) {
-//   try {
-//     //* save deletes games somewhere as well?
-//     //* TODO: Send all players messages, that the game was deleted
-//     //* WEBSOCKET needed
+        res.status(responseStatus.OK).json({
+            status: jrestStatus.success,
+            data: { game: gameToStart },
+        })
+    } catch (error: any) {
+        res.status(responseStatus.BadRequest).json({
+            status: jrestStatus.fail,
+            message: error.message,
+        })
+    }
+}
 
-//     const gameId = req.params.id;
-//     const indexToReplace = games.findIndex((game) => game.id === gameId);
-//     if (indexToReplace !== -1 && indexToReplace !== undefined) {
-//       const gameToDelete = games.find((game) => game.id == gameId);
-//       games = games.filter((game) => game.id != gameId);
+export async function postGameFinish(req: Request, res: Response) {
+    try {
+        //* Only host can send this
+        //* Here: Some kind of verification that the highscore is legit? Keep Websocket-Connection intact to?
 
-//       res.status(responseStatus.OK).json({
-//         status: jrestStatus.success,
-//         data: { game: gameToDelete },
-//       });
-//     } else throw new NotFoundError(`Game with id ${gameId} not found`);
-//   } catch (error: any) {
-//     res.status(responseStatus.BadRequest).json({
-//       status: jrestStatus.fail,
-//       message: error.message,
-//     });
-//   }
-// }
+        const gameToFinish = await finishGame(req)
 
-// export async function startGame(req: Request, res: Response) {
-//   try {
-//     //* TODO: Some kind of authentication needed to know that the founder send this request
-
-//     const gameId = req.params.id;
-//     const indexToReplace = games.findIndex((game) => game.id === gameId);
-//     if (indexToReplace !== -1 && indexToReplace !== undefined) {
-//       //! HERE: Actually start the game, initiate all connections
-//       //* Remove started game from array
-//       const gameToStart = games.find((game) => game.id == gameId);
-//       games = games.filter((game) => game.id != gameId);
-
-//       res.status(responseStatus.OK).json({
-//         status: jrestStatus.success,
-//         data: { game: gameToStart },
-//       });
-//     } else throw new NotFoundError(`Game with id ${gameId} not found`);
-//   } catch (error: any) {
-//     res.status(responseStatus.BadRequest).json({
-//       status: jrestStatus.fail,
-//       message: error.message,
-//     });
-//   }
-// }
+        res.status(responseStatus.OK).json({
+            status: jrestStatus.success,
+            data: { game: gameToFinish },
+        })
+    } catch (error: any) {
+        res.status(responseStatus.BadRequest).json({
+            status: jrestStatus.fail,
+            message: error.message,
+        })
+    }
+}

@@ -1,15 +1,25 @@
-import { Router } from 'express';
-import { postGames, getGames } from '../controllers/gameController.js';
-import { checkBodyPostGame } from '../services/gameService.js';
+import { Router } from 'express'
+import {
+    postGames,
+    getGames,
+    putGameJoin,
+    deleteGame,
+    putGameLeave,
+    postGameStart,
+    postGameFinish,
+} from '../controllers/gameController.js'
 
 // import { authenticateJWT } from '../auth';
 
-const router = Router();
+const router = Router()
 
-router.route('/').get(getGames).post(postGames);
-// router.route('/:id').delete(deleteGame);
-// router.route('/:id/join').put(checkBodyJoinLeaveGame, joinGame);
-// router.route('/:id/leave').put(checkBodyJoinLeaveGame, leaveGame);
-// router.route('/:id/start').post(startGame);
+//! Here: add authentication routine
 
-export default router;
+router.route('/').get(getGames).post(postGames)
+router.route('/:id').delete(deleteGame)
+router.route('/:id/join').put(putGameJoin)
+router.route('/:id/leave').put(putGameLeave)
+router.route('/:id/start').put(postGameStart)
+router.route('/:id/finish').put(postGameFinish)
+
+export default router

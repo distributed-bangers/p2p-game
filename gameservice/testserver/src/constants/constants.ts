@@ -1,27 +1,30 @@
-export const apiURL = '/api/v1';
+export const apiURL = '/api/v1'
 
 export enum responseStatus {
-  /** Success: OK */
-  OK = 200,
+    /** Success: OK */
+    OK = 200,
 
-  /** Success: Created */
-  Created = 201,
+    /** Success: Created */
+    Created = 201,
 
-  /** Success: No Content */
-  NoContent = 204,
+    /** Success: No Content */
+    NoContent = 204,
 
-  /** Bad Request */
-  BadRequest = 400,
+    /** Unauthorized */
 
-  /** Not Found */
-  NotFound = 404,
+    Unauthorized = 401,
+    /** Bad Request */
+    BadRequest = 400,
 
-  /** Internal Server Error */
-  InternalServerError = 500,
+    /** Not Found */
+    NotFound = 404,
+
+    /** Internal Server Error */
+    InternalServerError = 500,
 }
 
 export enum jrestStatus {
-  success = 'success',
-  fail = 'fail',
-  error = 'error',
+    success = 'success',
+    fail = 'fail',
+    error = 'error',
 }
