@@ -1,21 +1,21 @@
-import app from './app.js';
-import dotenv from 'dotenv';
-dotenv.config({ path: './src/config.env' });
-import mongoose from 'mongoose';
+import server from './socketios.js'
+import dotenv from 'dotenv'
+dotenv.config({ path: './src/config.env' })
+import mongoose from 'mongoose'
 
-const port = process.env.PORT;
+const port = process.env.PORT
 
 const DBConnection = process.env.DATABASE!.replace(
-  '<PASSWORD>',
-  process.env.DATABASE_PASSWORD!
-);
+    '<PASSWORD>',
+    process.env.DATABASE_PASSWORD!
+)
 
-console.log(DBConnection);
+console.log(DBConnection)
 
 mongoose
-  .connect(DBConnection)
-  .then(() => console.log('DB connection successful'));
+    .connect(DBConnection)
+    .then(() => console.log('DB connection successful'))
 
-const server = app.listen(port, () => {
-  console.log(`gameservice is listening on port ${port}`);
-});
+server.listen(port, () => {
+    console.log(`gameservice is listening on port ${port}`)
+})

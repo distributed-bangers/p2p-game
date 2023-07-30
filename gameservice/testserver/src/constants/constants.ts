@@ -1,5 +1,12 @@
 export const apiURL = '/api/v1'
 
+export enum socketio {
+    join = 'join',
+    leave = 'leave',
+    startGame = 'startGame',
+    endConnection = 'endConnection',
+}
+
 export enum responseStatus {
     /** Success: OK */
     OK = 200,
