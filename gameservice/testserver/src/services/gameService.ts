@@ -52,10 +52,7 @@ export async function joinGame(req: Request) {
                         game.players.push(player)
                         await Game.replaceOne({ _id: game._id }, game)
                         return game
-                    } else
-                        throw new Error(
-                            'This Player is already part of this game'
-                        )
+                    } else return game
                 } else throw new Error('Game is already full')
             } else
                 throw new Error(
@@ -84,7 +81,7 @@ export async function leaveGame(req: Request) {
                         throw new Error(
                             'Host cannot leave game. Delete game instead.'
                         )
-                } else throw new Error('This Player is not part of this game')
+                } else return game
             } else
                 throw new Error(
                     `Game with id ${gameId} not found or already started`
