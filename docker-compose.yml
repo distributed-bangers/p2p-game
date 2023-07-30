@@ -1,0 +1,70 @@
+version: '3.1'
+networks:
+  userservice:
+    driver: bridge
+  gameservice:
+    driver: bridge
+  db:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  mongodb_configdata:
+
+services:
+  userservice:
+    container_name: userservice
+    build:
+      context: ./userservice/
+      dockerfile: Dockerfile
+    depends_on:
+      - mongo
+    volumes:
+      - .:/src
+    command: npm start
+    ports:
+      - '3000:8080'
+    environment:
+      NODE_ENV: production
+      NODE_CONFIG_DIR: ./src/config/
+    networks:
+      - userservice
+
+  # //! here gameservice to be added
+
+  mongo:
+    container_name: mongo
+    image: mongo:latest
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - '27017:27017'
+    networks:
+      - db
+      - userservice
+      - gameservice
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_configdata:/data/configdb
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+
+  mongo-express:
+    container_name: mongo-express
+    image: mongo-express:latest
+    restart: always
+    ports:
+      - '8081:8081'
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017
+    depends_on:
+      - mongo
+    networks:
+      - db
+
+  peerserver:
+    container_name: peerserver
+    image: peerjs/peerjs-server:latest
+    ports:
+      - '9000:9000'
