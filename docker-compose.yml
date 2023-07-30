@@ -30,7 +30,27 @@ services:
     networks:
       - userservice
 
-  # //! here gameservice to be added
+  gameservice:
+    container_name: gameservice
+    build:
+      context: ./gameservice/
+      dockerfile: Dockerfile
+    depends_on:
+      - mongo
+    volumes:
+      - .:/src
+    command: npm start
+    ports:
+      - '3001:8080'
+    environment:
+      DATABASE: mongodb://gs_admin:<PASSWORD>@mongo:27017/gameservice
+      PORT: 8080
+      DATABASE_USERNAME: gs_admin
+      DATABASE_PASSWORD: root
+      NODE_ENV: production
+      NODE_CONFIG_DIR: ./src/config/
+    networks:
+      - gameservice
 
   mongo:
     container_name: mongo
