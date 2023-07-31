@@ -2,8 +2,11 @@
     "server": {
         "port": 5000
     },
-    "db": {
-        "conn_string": "mongodb://us_admin:root@localhost:27017/userservice"
+    "mongo": {
+        "conn_string": "mongodb://us_admin:jFRBDfG-lAz8yXA@localhost:27017/userservice"
     },
-    "token_secret": "4ecb7c5a013cf78fd10bcc91b8ff73f779b77fa500f03c4485831bcd5c8601af"
+    "token_secret": "4ecb7c5a013cf78fd10bcc91b8ff73f779b77fa500f03c4485831bcd5c8601af",
+    "redis": {
+        "conn_string": "redis://userservice:ukQMzEQ8WSJ5hR28WSJ5hR2@localhost:3030"
+    }
 }
