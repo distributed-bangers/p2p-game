@@ -14,6 +14,8 @@ io.on('leave', (data) => console.log(data));
 io.on('disconnect', (data) => console.log(data));
 
 //* Client shares his information when joining a room
+
+const game = await api.put()
 io.emit('join', client);
 
 // io.emit('leave', client);
