@@ -1,12 +1,16 @@
 <script lang="ts">
-  import { afterUpdate } from "svelte";
+  import userState from '../../state/user';
 
-  const signIn = "sign in";
-  const signUp = "sign up";
+  const signIn = 'sign in';
+  const signUp = 'sign up';
   $: signInUC = signIn.toUpperCase();
   $: signUpUC = signUp.toUpperCase();
 
   let login = true;
+
+  const onAuthenticate = () => {
+    $userState.authenticated = true;
+  };
 </script>
 
 <div class="main">
@@ -30,7 +34,9 @@
     {#if !login}
       <input class="input" type="password" placeholder="Repeat password" />
     {/if}
-    <button class="login">{login ? signInUC : signUpUC}</button>
+    <button class="login" on:click={onAuthenticate}
+      >{login ? signInUC : signUpUC}</button
+    >
   </div>
 </div>
 
