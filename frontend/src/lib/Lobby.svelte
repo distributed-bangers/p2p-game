@@ -117,8 +117,7 @@
 </script>
 
 <div id="rootDiv">
-  <h1>Racoosh Lobby</h1>
-
+  <h1 id="heading">Racoosh Lobby</h1>
   <div id="cardDiv">
     <div id="tableDiv">
       <table id="lobbyTable">
@@ -166,11 +165,26 @@
       rgba(0, 0, 0, 0.08) 0px 0px 0px 1px;
   }
 
+  #rootDiv {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  #heading {
+    width: 100%;
+    position: absolute;
+    top: 0;
+    z-index: 1;
+  }
+
   #cardDiv {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    margin-top: 10em;
     width: 40em;
     height: 20em;
     background-color: rgb(235, 235, 235);
@@ -193,10 +207,17 @@
 
   #lobbyTable {
     width: 100%;
-    overflow: auto;
+    /* overflow: auto; */
     border-style: hidden;
     border-collapse: collapse;
   }
+
+  th {
+    background-color: rgb(162, 162, 162);
+    position: sticky;
+    top: 0;
+  }
+
   tr {
     border: 1px solid transparent;
   }

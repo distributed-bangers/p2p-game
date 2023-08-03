@@ -14,3 +14,12 @@
     <GameLobby />
   {/if}
 </main>
+
+<style>
+  main {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    text-align: center;
+  }
+</style>

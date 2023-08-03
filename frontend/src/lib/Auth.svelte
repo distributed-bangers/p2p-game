@@ -13,7 +13,7 @@
   };
 </script>
 
-<div class="main">
+<div id="rootDiv">
   <h1>Welcome to Racoosh!</h1>
 
   <div class="logincard">
@@ -41,6 +41,10 @@
 </div>
 
 <style>
+  #rootDiv {
+    width: 35em;
+  }
+
   .logincard {
     display: flex;
     flex-direction: column;
@@ -60,7 +64,7 @@
   .input {
     margin: 1em;
     height: 3em;
-    width: 50%;
+    width: 70%;
   }
 
   .atext {
