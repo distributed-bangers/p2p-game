@@ -3,7 +3,13 @@ export interface User {
   username: string;
 }
 
-export interface AuthUser {
+export interface SignInUser {
   username: string;
   password: string;
+}
+
+export interface SignUpUser {
+  username: string;
+  password: string;
+  passwordRepeat: string;
 }

@@ -1,11 +1,10 @@
-import userState from '../../state/user';
-import type { AuthUser } from '../models/user';
+import type { SignInUser } from '../models/user';
 import { jrestStatus } from '../shared/constants';
 
 const userAPI =
   import.meta.env.VITE_USER_API + import.meta.env.VITE_API_VERSION + '/users';
 
-export async function signUp(User: AuthUser, PasswordRepeat: string) {
+export async function signUp(User: SignInUser, PasswordRepeat: string) {
   try {
     const { username, password } = User;
 
@@ -36,7 +35,7 @@ export async function signUp(User: AuthUser, PasswordRepeat: string) {
   }
 }
 
-export async function signIn(User: AuthUser) {
+export async function signIn(User: SignInUser) {
   try {
     const { username, password } = User;
 

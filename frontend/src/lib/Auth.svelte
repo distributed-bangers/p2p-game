@@ -3,7 +3,6 @@
   import * as yup from 'yup'
   import userState from '../../state/user';
   import { signUp, signIn } from '../services/userService';
-  import { string } from 'yup'
   import type { SignInUser, SignUpUser } from '../models/user'
 
 
@@ -17,7 +16,8 @@
     errors: signInErrors,
     state: signInState,
     handleChange: signInHandleChange,
-    handleSubmit : signInHandleSubmit
+    handleSubmit : signInHandleSubmit,
+      isValidating
   } =
       createForm({
     initialValues: {
@@ -49,7 +49,8 @@
     errors: signUpErrors,
     state: signUpState,
     handleChange: signUpHandleChange,
-    handleSubmit : signUpHandleSubmit
+    handleSubmit : signUpHandleSubmit,
+
   }  = createForm({
     initialValues: {
       username: "",
@@ -62,8 +63,6 @@
           .required("Username is required."),
       password: yup.string()
           .required("Please enter your password.")
-          .min(8,"Password is too short.")
-          .max(16, "Password is too long.")
           .matches(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/,"Password criteria: 1 uppercase, 1 lowercase,1 number"),
       passwordRepeat: yup.string()
           .required("Please retype your password.")
@@ -87,13 +86,12 @@
     }
   });
 
-
 </script>
 <div class="container" class:panelActive id="container">
   <div class="form-container sign-up-container">
     <form>
       <h1>Create Account</h1>
-      <input type="text" placeholder="Username" bind:value={$signUpForm.username} on:change={signUpHandleChange}/>
+      <input type="text" placeholder="Username" bind:value={$signUpForm.username}  on:keyup={signUpHandleChange}/>
       {#if $signUpErrors.username}
         <span class="error">{$signUpErrors.username}</span>
       {/if}
@@ -111,13 +109,13 @@
   <div class="form-container sign-in-container">
     <form>
       <h1>Sign in</h1>
-      <input type="text" placeholder="Username" bind:value={$signInForm.username} on:change={signInHandleChange}/>
+      <input type="text" placeholder="Username" bind:value={$signInForm.username} on:change={signInHandleChange} />
       {#if $signInErrors.username}
-        <span class="error">{$signUpErrors.username}</span>
+        <span class="error">{$signInErrors.username}</span>
       {/if}
-      <input type="password" placeholder="Password" bind:value={$signInForm.password} on:change={signInHandleChange}/>
+      <input type="password" placeholder="Password" bind:value={$signInForm.password} on:change={signInHandleChange} />
       {#if $signInErrors.password}
-        <span class="error">{$signUpErrors.password}</span>
+        <span class="error">{$signInErrors.password}</span>
       {/if}
       <i class='farEye' />
       <a href="/">Forgot your password?</a>
