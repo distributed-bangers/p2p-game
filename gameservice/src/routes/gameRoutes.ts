@@ -8,13 +8,11 @@ import {
     postGameStart,
     postGameFinish,
 } from '../controllers/gameController.js'
-
-// import { authenticateJWT } from '../auth';
+import { authenticateJWT } from '../auth.js'
 
 const router = Router()
 
-//! Here: add authentication routine
-
+router.use(authenticateJWT)
 router.route('/').get(getGames).post(postGames)
 router.route('/:id').delete(deleteGame)
 router.route('/:id/join').put(putGameJoin)
