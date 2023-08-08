@@ -3,7 +3,9 @@ import { createHash, generateJWT } from '../auth.js'
 import { IUser } from '../index.js'
 import crypto from 'crypto'
 
-export async function loginUserAsync(body: any) {
+export async function loginUserAsync(
+    body: any
+): Promise<{ userid: string; token: string }> {
     let { username, password } = body
     if (!username || !password) {
         throw new Error('Bad request')
@@ -14,7 +16,7 @@ export async function loginUserAsync(body: any) {
     } else if (user.password == createHash(user.salt, password)) {
         try {
             const token = generateJWT(user)
-            return token!
+            return { userid: user._id.toString(), token: token! }
         } catch (error) {
             throw error
         }

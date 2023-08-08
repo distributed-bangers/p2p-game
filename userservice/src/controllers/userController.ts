@@ -24,10 +24,11 @@ export const signIn = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
     try {
-        const token = await loginUserAsync(req.body)
+        const response = await loginUserAsync(req.body)
         res.status(201).json({
+            userid: response.userid,
             status: 'success',
-            token: token,
+            token: response.token,
         })
     } catch (error: any) {
         res.status(400).json({
