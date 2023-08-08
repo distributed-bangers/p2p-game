@@ -6,7 +6,7 @@ import {
 import { Request, Response } from 'express'
 import { IUser, TypedRequestQuery } from '../index.js'
 
-export const signIn = async (req: Request, res: Response) => {
+export const signUp = async (req: Request, res: Response) => {
     try {
         const response = await createUserAsync(req.body)
         res.status(201).json({
