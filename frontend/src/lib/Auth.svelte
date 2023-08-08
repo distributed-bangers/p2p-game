@@ -1,45 +1,91 @@
 <script lang="ts">
+  import {createForm} from 'svelte-forms-lib'
+  import * as yup from 'yup'
   import userState from '../../state/user';
   import { signUp, signIn } from '../services/userService';
+  import { string } from 'yup'
+  import type { SignInUser, SignUpUser } from '../models/user'
 
-  const signInText = 'sign in';
-  const signUpText = 'sign up';
-  $: signInUC = signInText.toUpperCase();
-  $: signUpUC = signUpText.toUpperCase();
 
-  let username = null;
-  let password = null;
-  let passwordRepeat = null;
+  let panelActive = false
+  function togglePanelActive(){
+    panelActive=!panelActive
+  }
 
-  let login = true;
-
-  const onSignUp = async () => {
-    try {
-      const response = await signUp({ username, password }, passwordRepeat);
-
-      $userState.userid = response.userid;
-      $userState.username = username;
-      $userState.authenticated = true;
-      $userState.jwt = response.token;
-
-      return;
-    } catch (error) {
-      alert(error.message);
+  const {
+    form: signInForm,
+    errors: signInErrors,
+    state: signInState,
+    handleChange: signInHandleChange,
+    handleSubmit : signInHandleSubmit
+  } =
+      createForm({
+    initialValues: {
+      username: "",
+      password: ""
+    },
+    validationSchema: yup.object().shape({
+      username: yup.string()
+          .required("Username is required."),
+      password: yup.string()
+          .required("Please enter your password.")
+    }),
+    onSubmit: async (values:SignInUser )=> {
+      try {
+        const response = await signIn(values);
+        console.log(response);
+        $userState.userid = response.userid;
+        $userState.username = values.username;
+        $userState.authenticated = true;
+        $userState.jwt = response.token;
+      } catch (error) {
+        alert(error.message);
+      }
     }
-  };
-  const onSignIn = async () => {
-    try {
-      const response = await signIn({ username, password });
-      console.log(response);
-      $userState.userid = response.userid;
-      $userState.username = username;
-      $userState.authenticated = true;
-      $userState.jwt = response.token;
+  });
+
+  const {
+    form: signUpForm,
+    errors: signUpErrors,
+    state: signUpState,
+    handleChange: signUpHandleChange,
+    handleSubmit : signUpHandleSubmit
+  }  = createForm({
+    initialValues: {
+      username: "",
+      password: "",
+      passwordRepeat: ""
+    },
+    validationSchema: yup.object().shape({
+      username: yup.string()
+          .min(5,"Username must be at least of 5 letters.")
+          .required("Username is required."),
+      password: yup.string()
+          .required("Please enter your password.")
+          .min(8,"Password is too short.")
+          .max(16, "Password is too long.")
+          .matches(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/,"Password criteria: 1 uppercase, 1 lowercase,1 number"),
+      passwordRepeat: yup.string()
+          .required("Please retype your password.")
+          .oneOf([yup.ref('password')], "Passwords don't match.")
+
+    }),
+    onSubmit: async (values:SignUpUser) => {
+      try {
+        const{username, password, passwordRepeat} = values
+        const response = await signUp({ username, password}, passwordRepeat);
+
+        $userState.userid = response.userid;
+        $userState.username = values.username;
+        $userState.authenticated = true;
+        $userState.jwt = response.token;
+
+        return;
     } catch (error) {
-      alert(error.message);
+        alert(error.message);
     }
-  };
-</script>
+    }
+  });
 
 
 </script>
