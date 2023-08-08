@@ -1,15 +1,34 @@
 <script lang="ts">
   import userState from '../../state/user';
+  import { signUp } from '../services/userService';
 
-  const signIn = 'sign in';
-  const signUp = 'sign up';
-  $: signInUC = signIn.toUpperCase();
-  $: signUpUC = signUp.toUpperCase();
+  const signInText = 'sign in';
+  const signUpText = 'sign up';
+  $: signInUC = signInText.toUpperCase();
+  $: signUpUC = signUpText.toUpperCase();
+
+  let username = null;
+  let password = null;
+  let passwordRepeat = null;
 
   let login = true;
 
-  const onAuthenticate = () => {
-    $userState.authenticated = true;
+  const onSignUp = async () => {
+    try {
+      const response = await signUp({ username, password }, passwordRepeat);
+
+      $userState.userid = response.userid;
+      $userState.username = username;
+      $userState.authenticated = true;
+      $userState.jwt = response.token;
+
+      return;
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+  const onSignIn = () => {
+    // $userState.authenticated = true;
   };
 </script>
 
@@ -17,7 +36,7 @@
   <h1>Welcome to Racoosh!</h1>
 
   <div class="logincard">
-    <h3>Please {login ? signIn : signUp}.</h3>
+    <h3>Please {login ? signInText : signUpText}.</h3>
     <h3>
       Want to <a
         href="#"
@@ -26,15 +45,30 @@
           login = !login;
         }}
       >
-        {login ? signUp : signIn}</a
+        {login ? signUpText : signInText}</a
       > instead?
     </h3>
-    <input class="input" type="text" placeholder="Username" />
-    <input class="input" type="password" placeholder="Password" />
+    <input
+      class="input"
+      type="text"
+      placeholder="Username"
+      bind:value={username}
+    />
+    <input
+      class="input"
+      type="password"
+      placeholder="Password"
+      bind:value={password}
+    />
     {#if !login}
-      <input class="input" type="password" placeholder="Repeat password" />
+      <input
+        class="input"
+        type="password"
+        placeholder="Repeat password"
+        bind:value={passwordRepeat}
+      />
     {/if}
-    <button class="login" on:click={onAuthenticate}
+    <button class="login" on:click={login ? onSignIn : onSignUp}
       >{login ? signInUC : signUpUC}</button
     >
   </div>
