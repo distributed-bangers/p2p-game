@@ -35,3 +35,30 @@ export async function signUp(User: AuthUser, PasswordRepeat: string) {
     throw error;
   }
 }
+
+export async function signIn(User: AuthUser) {
+  try {
+    const { username, password } = User;
+
+    if (!username || !password) {
+      throw new Error('Please enter a username and password!');
+    }
+
+    const response = await fetch(userAPI + '/login', {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(User),
+    });
+
+    const result = await response.json();
+
+    if (result.status != jrestStatus.success) throw new Error(result.message);
+
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}

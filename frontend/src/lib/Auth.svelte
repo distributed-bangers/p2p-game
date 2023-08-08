@@ -1,6 +1,6 @@
 <script lang="ts">
   import userState from '../../state/user';
-  import { signUp } from '../services/userService';
+  import { signUp, signIn } from '../services/userService';
 
   const signInText = 'sign in';
   const signUpText = 'sign up';
@@ -27,8 +27,17 @@
       alert(error.message);
     }
   };
-  const onSignIn = () => {
-    // $userState.authenticated = true;
+  const onSignIn = async () => {
+    try {
+      const response = await signIn({ username, password });
+      console.log(response);
+      $userState.userid = response.userid;
+      $userState.username = username;
+      $userState.authenticated = true;
+      $userState.jwt = response.token;
+    } catch (error) {
+      alert(error.message);
+    }
   };
 </script>
 
