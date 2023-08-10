@@ -22,6 +22,7 @@
     } catch (error) {
       alert(error.message);
       showLoadingSpinner = false;
+      $userState.isInGame = false;
     }
   };
 
