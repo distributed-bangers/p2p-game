@@ -7,6 +7,6 @@
     },
     "token_secret": "4ecb7c5a013cf78fd10bcc91b8ff73f779b77fa500f03c4485831bcd5c8601af",
     "client": {
-        "url": "http://127.0.0.1:5173"
+        "url": "http://localhost:5173"
     }
 }

@@ -14,8 +14,10 @@ export async function getAllGames(req: Request) {
         (open === undefined && closed === undefined)
     )
         games = await Game.find()
+    //* Open Games => Spiele, die in der Lobby zu finden sind
     else if (open && !closed)
         games = await Game.find({ started: 'false', finished: 'false' })
+    //* Closed Games => Vergangene Spiele, die als Highscore angezeigt werden können
     else if (!open && closed)
         games = await Game.find({ started: 'true', finished: 'true' })
     return games
@@ -26,8 +28,6 @@ export async function getGameById(id: string) {
 }
 
 export async function createGame(req: Request) {
-    //TODO: Socket-Verbindung mit Host
-
     if (req.body.name) {
         const host = extractUserFromToken(req)
 
@@ -40,7 +40,6 @@ export async function createGame(req: Request) {
 }
 
 export async function joinGame(req: Request) {
-    //TODO: Socket-Verbindung mit gejointem Player aufbauen, Nachricht an alle anderen Spieler senden
     const gameId = req.params.id
     if (gameId) {
         const game = await getGameById(gameId)
@@ -63,7 +62,6 @@ export async function joinGame(req: Request) {
 }
 
 export async function leaveGame(req: Request) {
-    //TODO: Socket Nachricht an alle anderen Spieler senden, dass Spieler Lobby verlassen hat
     const gameId = req.params.id
     if (gameId) {
         const game = await getGameById(gameId)

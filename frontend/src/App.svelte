@@ -8,9 +8,9 @@
 <main>
   {#if !$userState.authenticated}
     <Auth />
-  {:else if !$userState.game}
+  {:else if !$userState.isInGame && $userState.authenticated}
     <Lobby />
-  {:else}
+  {:else if $userState.isInGame && $userState.authenticated}
     <GameLobby />
   {/if}
 </main>

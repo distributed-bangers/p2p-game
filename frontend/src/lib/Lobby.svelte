@@ -2,122 +2,85 @@
   import type { Game } from '../models/game';
   import type { User } from '../models/user';
   import userState from '../../state/user';
-
-  const userOne: User = { userid: '1', username: 'user1' };
-  const userTwo: User = { userid: '2', username: 'user3' };
-  const userThree: User = { userid: '3', username: 'user3' };
-  const userFour: User = { userid: '4', username: 'user4' };
+  import { createGame, getAllGames, joinGame } from '../services/gameService';
+  import { onMount, onDestroy } from 'svelte';
+  import CreateGameModal from './CreateGameModal.svelte';
 
   let selectedGame: Game = null;
+  let openGames: Game[] = [];
+  let showLoadingSpinner = false;
+  let showCreateGameModal = false;
 
-  const myGames: Game[] = [
-    {
-      name: 'gameOne',
-      host: userOne,
-      players: [userOne, userTwo],
-      finished: false,
-      started: false,
-    },
-    {
-      name: 'gameOne',
-      host: userThree,
-      players: [userThree, userFour, userOne],
-      finished: false,
-      started: false,
-    },
-    {
-      name: 'gameOne',
-      host: userThree,
-      players: [userThree, userFour, userOne],
-      finished: false,
-      started: false,
-    },
-    {
-      name: 'gameOne',
-      host: userThree,
-      players: [userThree, userFour, userOne],
-      finished: false,
-      started: false,
-    },
-    {
-      name: 'gameOne',
-      host: userThree,
-      players: [userThree, userFour, userOne],
-      finished: false,
-      started: false,
-    },
-    {
-      name: 'gameOne',
-      host: userThree,
-      players: [userThree, userFour, userOne],
-      finished: false,
-      started: false,
-    },
-    {
-      name: 'gameOne',
-      host: userThree,
-      players: [userThree, userFour, userOne],
-      finished: false,
-      started: false,
-    },
-    {
-      name: 'gameOne',
-      host: userThree,
-      players: [userThree, userFour, userOne],
-      finished: false,
-      started: false,
-    },
-    {
-      name: 'gameOne',
-      host: userThree,
-      players: [userThree, userFour, userOne],
-      finished: false,
-      started: false,
-    },
-    {
-      name: 'gameOne',
-      host: userThree,
-      players: [userThree, userFour, userOne],
-      finished: false,
-      started: false,
-    },
-    {
-      name: 'gameOne',
-      host: userThree,
-      players: [userThree, userFour, userOne],
-      finished: false,
-      started: false,
-    },
-    {
-      name: 'gameOne',
-      host: userThree,
-      players: [userThree, userFour, userOne],
-      finished: false,
-      started: false,
-    },
-    {
-      name: 'gameOne',
-      host: userThree,
-      players: [userThree, userFour, userOne],
-      finished: false,
-      started: false,
-    },
-    {
-      name: 'gameOne',
-      host: userThree,
-      players: [userThree, userFour, userOne],
-      finished: false,
-      started: false,
-    },
-  ];
+  onMount(async () => {
+    $userState.game = null;
+    try {
+      showLoadingSpinner = true;
+      const response = await getAllGames({ open: true });
+      showLoadingSpinner = false;
+      openGames = response.data.games;
+    } catch (error) {
+      alert(error.message);
+      showLoadingSpinner = false;
+    }
+  });
 
-  const onClickJoin = () => {
-    $userState.game = selectedGame;
+  onDestroy(() => {
+    console.log('DESTROY');
+    openGames = [];
+  });
+
+  const onClickRefresh = async () => {
+    try {
+      showLoadingSpinner = true;
+      const response = await getAllGames({ open: true });
+      showLoadingSpinner = false;
+      openGames = response.data.games;
+    } catch (error) {
+      alert(error.message);
+      showLoadingSpinner = false;
+    }
+  };
+
+  const onClickJoin = async () => {
+    try {
+      showLoadingSpinner = true;
+      const response = await joinGame(selectedGame._id);
+      showLoadingSpinner = false;
+      $userState.game = response.data.game;
+      $userState.isInGame = true;
+    } catch (error) {
+      alert(error.message);
+      showLoadingSpinner = false;
+    }
+  };
+  const onClickCreate = () => {
+    showCreateGameModal = true;
+  };
+
+  const onCreateNewGame = async (gameName: string) => {
+    try {
+      showLoadingSpinner = true;
+      const response = await createGame(gameName);
+      const newGame = response.data.game;
+      $userState.game = newGame;
+      $userState.isInGame = true;
+      showLoadingSpinner = false;
+    } catch (error) {
+      alert(error.message);
+      showLoadingSpinner = false;
+    }
   };
 </script>
 
+<CreateGameModal bind:showCreateGameModal {onCreateNewGame}></CreateGameModal>
+
+{#if showLoadingSpinner}
+  <div id="loading"></div>
+{/if}
+
 <div id="rootDiv">
   <h1 id="heading">Racoosh Lobby</h1>
+  <h2>Hi there, {$userState.username} 😊</h2>
   <div id="cardDiv">
     <div id="tableDiv">
       <table id="lobbyTable">
@@ -126,28 +89,35 @@
           <th>Host</th>
           <th>Players</th>
         </tr>
-
-        {#each myGames as game}
-          <tr
-            class={selectedGame === game ? 'hoverRow' : ''}
-            on:click={(event) => {
-              selectedGame = game;
-            }}
-          >
-            <td>{game.name}</td>
-            <td>{game.host.username}</td>
-            <td>
-              {game.players.length}/4
-            </td>
+        {#if openGames.length > 0}
+          {#each openGames as game}
+            <tr
+              class={selectedGame === game ? 'hoverRow' : ''}
+              on:click={(event) => {
+                selectedGame = game;
+              }}
+            >
+              <td>{game.name}</td>
+              <td>{game.host.username}</td>
+              <td>
+                {game.players.length}/4
+              </td>
+            </tr>
+          {/each}
+        {:else}
+          <tr>
+            <td colspan="3">No open games found. Click refresh to try again.</td
+            >
           </tr>
-        {/each}
+        {/if}
       </table>
     </div>
     <div id="buttonDiv">
-      <button class="button">Refresh</button>
+      <button class="button" on:click={onClickRefresh}>Refresh</button>
       <button class="button" disabled={!selectedGame} on:click={onClickJoin}
         >Join Game</button
       >
+      <button class="button" on:click={onClickCreate}>Create Game</button>
     </div>
   </div>
 </div>

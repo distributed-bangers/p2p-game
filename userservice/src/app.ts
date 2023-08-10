@@ -10,7 +10,7 @@ import config from 'config'
 const clientUrl = <string>config.get('client.url')
 
 let corsOptions: CorsOptions = {
-    origin: '*',
+    origin: clientUrl,
     optionsSuccessStatus: 200,
 }
 

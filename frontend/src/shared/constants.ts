@@ -5,3 +5,8 @@ export enum jrestStatus {
   fail = 'fail',
   error = 'error',
 }
+
+export enum errorMessages {
+  serverError = 'Server error: Something went wrong.',
+  clientError = 'Client error: Something went wrong.',
+}
