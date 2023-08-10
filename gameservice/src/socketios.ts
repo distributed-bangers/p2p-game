@@ -29,8 +29,9 @@ io.on('connection', (socket) => {
 
     socket.on(socketio.leave, (data: IUser) => {
         console.log('SOCKETIO-LEAVE', data)
-        socket.leave(gameId)
         socket.to(gameId).emit(socketio.leave, data)
+        socket.leave(gameId)
+        socket.disconnect()
     })
 
     //* start is send by the host: all other players get the information of all players
