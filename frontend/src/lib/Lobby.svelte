@@ -143,6 +143,7 @@
     width: 100%;
     position: absolute;
     top: 0;
+    margin-top: 5vh;
     z-index: 1;
   }
 

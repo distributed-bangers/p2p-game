@@ -15,6 +15,8 @@ export class socketService {
   private static socketServer = import.meta.env.VITE_SOCKET_URL;
 
   private constructor(gameName: string) {
+    console.log('SOCKETSERVICE INSTANCE CREATED');
+
     if (!socketService.socket) {
       socketService.socket = io(socketService.socketServer, {
         extraHeaders: { gameId: gameName },
@@ -26,6 +28,7 @@ export class socketService {
     }
 
     socketService.socket.on('join', (data: User) => {
+      console.log('JOIN', data);
       userState.update((u) => {
         if (u.game) u.game.players.push(data);
         return u;
@@ -33,6 +36,7 @@ export class socketService {
     });
 
     socketService.socket.on('leave', (data: User) => {
+      console.log('LEAVE', data);
       userState.update((u) => {
         if (u.game)
           u.game.players = u.game.players.filter(
@@ -51,26 +55,37 @@ export class socketService {
         }
         return u;
       });
+      socketService.resetSocketService();
     });
   }
 
   private static async getInstance(gameName: string) {
-    if (!this.instance) this.instance = new socketService(gameName);
+    if (!socketService.instance)
+      socketService.instance = new socketService(gameName);
   }
 
   //* Jeder Spieler (auch Host) teilt seine Informationen beim Beitritt/Austritt
   public static joinGame(gameName: string) {
-    if (!this.instance) this.getInstance(gameName);
-    this.socket.emit('join', this.client);
+    if (!socketService.instance) socketService.getInstance(gameName);
+    socketService.socket.emit('join', socketService.client);
   }
 
   public static leaveGame(gameName: string) {
-    if (this.instance) this.getInstance(gameName);
-    this.socket.emit('leave', this.client);
+    if (socketService.instance) socketService.getInstance(gameName);
+    socketService.socket.emit('leave', socketService.client);
+    socketService.resetSocketService();
   }
 
   public static endConnection(gameName: string) {
-    if (this.instance) this.getInstance(gameName);
-    this.socket.emit('endConnection');
+    if (socketService.instance) socketService.getInstance(gameName);
+    socketService.socket.emit('endConnection');
+    socketService.resetSocketService();
+  }
+
+  private static resetSocketService() {
+    socketService.instance = null;
+    socketService.socket = null;
+    socketService.client.userid = null;
+    socketService.client.username = null;
   }
 }
