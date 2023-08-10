@@ -105,10 +105,7 @@
             </tr>
           {/each}
         {:else}
-          <tr>
-            <td colspan="3">No open games found. Click refresh to try again.</td
-            >
-          </tr>
+          <td colspan="3">No open games found. Click refresh to try again.</td>
         {/if}
       </table>
     </div>
