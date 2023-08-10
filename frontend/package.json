@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "svelte-forms-lib": "^2.0.1",
-    "yup": "^1.2.0"
+    "yup": "^1.2.0",
     "socket.io-client": "^4.7.2"
   }
 }
