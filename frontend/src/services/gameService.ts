@@ -1,5 +1,5 @@
 import { get } from 'svelte/store';
-import userState from '../../state/user';
+import { jwt } from '../../state/user';
 import { errorMessages, jrestStatus } from '../shared/constants';
 import { socketService } from './socketService';
 import type { ResponseGame, ResponseGames } from '../models/api';
@@ -16,7 +16,7 @@ export async function getAllGames({
   closed = false,
 }): Promise<ResponseGames> {
   try {
-    let authorizationHeader = bearer + get(userState).jwt;
+    let authorizationHeader = bearer + get(jwt);
     let queryParam = '';
     if (open && closed) throw new Error(errorMessages.clientError);
     if (open && !closed) queryParam = '?open=true';
@@ -43,7 +43,7 @@ export async function getAllGames({
 
 export async function createGame(gameName: string): Promise<ResponseGame> {
   try {
-    let authorizationHeader = bearer + get(userState).jwt;
+    let authorizationHeader = bearer + get(jwt);
 
     const response = await fetch(gameAPI, {
       method: 'POST',
@@ -72,7 +72,7 @@ export async function createGame(gameName: string): Promise<ResponseGame> {
 
 export async function joinGame(gameId: string): Promise<ResponseGame> {
   try {
-    let authorizationHeader = bearer + get(userState).jwt;
+    let authorizationHeader = bearer + get(jwt);
 
     const response = await fetch(`${gameAPI}/${gameId}/join`, {
       method: 'PUT',
@@ -99,7 +99,7 @@ export async function joinGame(gameId: string): Promise<ResponseGame> {
 
 export async function leaveGame(gameId: string): Promise<ResponseGame> {
   try {
-    let authorizationHeader = bearer + get(userState).jwt;
+    let authorizationHeader = bearer + get(jwt);
 
     const response = await fetch(`${gameAPI}/${gameId}/leave`, {
       method: 'PUT',
@@ -126,7 +126,7 @@ export async function leaveGame(gameId: string): Promise<ResponseGame> {
 
 export async function deleteGame(gameId: string): Promise<ResponseGame> {
   try {
-    let authorizationHeader = bearer + get(userState).jwt;
+    let authorizationHeader = bearer + get(jwt);
 
     const response = await fetch(`${gameAPI}/${gameId}`, {
       method: 'DELETE',

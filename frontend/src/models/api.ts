@@ -1,5 +1,6 @@
 import type { jrestStatus } from '../shared/constants';
 import type { Game } from './game';
+import type { JWTPayload } from 'jose';
 
 //* Model for multiple Games API-Reponse
 export interface ResponseGames {
@@ -16,4 +17,8 @@ export interface ResponseGame {
   data: { game: Game };
   //* error message in case of fail/error
   message?: string;
+}
+export interface Payload extends JWTPayload {
+  userid: string;
+  username: string;
 }

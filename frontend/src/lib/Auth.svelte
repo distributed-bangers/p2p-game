@@ -1,7 +1,9 @@
 <script lang="ts">
   import { createForm } from 'svelte-forms-lib';
   import * as yup from 'yup';
-  import userState from '../../state/user';
+  import userState,{
+    jwt
+  } from '../../state/user';
   import { signUp, signIn } from '../services/userService';
   import type { SignInUser, SignUpUser } from '../models/user';
 
@@ -13,10 +15,8 @@
   const {
     form: signInForm,
     errors: signInErrors,
-    state: signInState,
     handleChange: signInHandleChange,
     handleSubmit: signInHandleSubmit,
-    isValidating,
   } = createForm({
     initialValues: {
       username: '',
@@ -29,11 +29,10 @@
     onSubmit: async (values: SignInUser) => {
       try {
         const response = await signIn(values);
-        console.log(response);
         $userState.userid = response.userid;
         $userState.username = values.username;
         $userState.authenticated = true;
-        $userState.jwt = response.token;
+        $jwt = response.token;
       } catch (error) {
         alert(error.message);
       }
@@ -43,7 +42,6 @@
   const {
     form: signUpForm,
     errors: signUpErrors,
-    state: signUpState,
     handleChange: signUpHandleChange,
     handleSubmit: signUpHandleSubmit,
   } = createForm({
@@ -77,8 +75,7 @@
         $userState.userid = response.userid;
         $userState.username = values.username;
         $userState.authenticated = true;
-        $userState.jwt = response.token;
-
+        $jwt = response.token;
         return;
       } catch (error) {
         alert(error.message);

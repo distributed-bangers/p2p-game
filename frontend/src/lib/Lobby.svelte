@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { Game } from '../models/game';
-  import type { User } from '../models/user';
   import userState from '../../state/user';
   import { createGame, getAllGames, joinGame } from '../services/gameService';
   import { onMount, onDestroy } from 'svelte';

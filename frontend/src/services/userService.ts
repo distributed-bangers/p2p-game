@@ -42,7 +42,6 @@ export async function signIn(User: SignInUser) {
     if (!username || !password) {
       throw new Error('Please enter a username and password!');
     }
-
     const response = await fetch(userAPI + '/login', {
       method: 'POST',
       mode: 'cors',
