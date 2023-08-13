@@ -1,11 +1,17 @@
-import { Router } from 'express';
-import { getOneUser, login, signIn } from '../controllers/userController.js';
-import { authenticateJWT } from '../auth.js';
+import { Router } from 'express'
+import {
+    getOneUser,
+    login,
+    logoutUser,
+    signIn,
+} from '../controllers/userController.js'
+import { authenticateJWT } from '../middleware/auth.js'
 
-const router = Router();
+const router = Router()
 
-router.route('/').post(signIn).get(login);
+router.route('/').post(signIn).get(login)
 
-router.use(authenticateJWT);
-router.route('/id/').get(getOneUser);
-export default router;
+router.use(authenticateJWT)
+router.route('/id').get(getOneUser)
+router.route('/logout').post(logoutUser)
+export default router
