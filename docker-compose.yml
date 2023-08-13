@@ -6,10 +6,16 @@ networks:
     driver: bridge
   db:
     driver: bridge
+  ufront:
+    driver: bridge
+  gfront:
+    driver: bridge
 
 volumes:
-  mongodb_data:
-  mongodb_configdata:
+  user_mongodb_data:
+  user_mongodb_configdata:
+  game_mongodb_data:
+  game_mongodb_configdata:
 
 services:
   userservice:
@@ -18,7 +24,7 @@ services:
       context: ./userservice/
       dockerfile: Dockerfile
     depends_on:
-      - mongo
+      - usermongo
     volumes:
       - .:/src
     command: npm start
@@ -29,6 +35,7 @@ services:
       NODE_CONFIG_DIR: ./src/config/
     networks:
       - userservice
+      - ufront
 
   gameservice:
     container_name: gameservice
@@ -36,14 +43,14 @@ services:
       context: ./gameservice/
       dockerfile: Dockerfile
     depends_on:
-      - mongo
+      - gamemongo
     volumes:
       - .:/src
     command: npm start
     ports:
       - '3001:8080'
     environment:
-      DATABASE: mongodb://gs_admin:<PASSWORD>@mongo:27017/gameservice
+      DATABASE: mongodb://gs_admin:<PASSWORD>@gamemongo:27018/gameservice
       PORT: 8080
       DATABASE_USERNAME: gs_admin
       DATABASE_PASSWORD: root
@@ -51,9 +58,10 @@ services:
       NODE_CONFIG_DIR: ./src/config/
     networks:
       - gameservice
+      - gfront
 
-  mongo:
-    container_name: mongo
+  usermongo:
+    container_name: usermongo
     image: mongo:latest
     restart: always
     environment:
@@ -64,11 +72,28 @@ services:
     networks:
       - db
       - userservice
+    volumes:
+      - user_mongodb_data:/data/db
+      - user_mongodb_configdata:/data/configdb
+      - ./mongo-init-users.js:/docker-entrypoint-initdb.d/mongo-init-users.js:ro
+
+
+  gamemongo:
+    container_name: gamemongo
+    image: mongo:latest
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - '27018:27017'
+    networks:
       - gameservice
     volumes:
-      - mongodb_data:/data/db
-      - mongodb_configdata:/data/configdb
-      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - game_mongodb_data:/data/db
+      - game_mongodb_configdata:/data/configdb
+      - ./mongo-init-games.js:/docker-entrypoint-initdb.d/mongo-init-games.js:ro
+
 
   mongo-express:
     container_name: mongo-express
@@ -77,9 +102,9 @@ services:
     ports:
       - '8081:8081'
     environment:
-      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@usermongo:27017
     depends_on:
-      - mongo
+      - usermongo
     networks:
       - db
 
