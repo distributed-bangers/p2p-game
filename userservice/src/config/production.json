@@ -3,6 +3,6 @@
         "port": 8080
     },
     "db":{
-        "conn_string":"mongodb://us_admin:jFRBDfG-lAz8yXA@mongo:27017/userservice"
+        "conn_string":"mongodb://us_admin:jFRBDfG-lAz8yXA@usermongo:27017/userservice"
     }
 }

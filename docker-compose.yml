@@ -50,7 +50,7 @@ services:
     ports:
       - '3001:8080'
     environment:
-      DATABASE: mongodb://gs_admin:<PASSWORD>@gamemongo:27018/gameservice
+      DATABASE: mongodb://gs_admin:<PASSWORD>@gamemongo:27017/gameservice
       PORT: 8080
       DATABASE_USERNAME: gs_admin
       DATABASE_PASSWORD: root
@@ -113,3 +113,20 @@ services:
     image: peerjs/peerjs-server:latest
     ports:
       - '9000:9000'
+
+
+  frontend:
+    container_name: frontend
+    build:
+      context: ./frontend/
+      dockerfile: Dockerfile
+    depends_on:
+      - gameservice
+      - userservice
+    volumes:
+      - ./default.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - '5173:80'
+    networks:
+      - ufront
+      - gfront
