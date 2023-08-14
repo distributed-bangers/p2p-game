@@ -18,6 +18,22 @@ volumes:
   game_mongodb_configdata:
 
 services:
+  frontend:
+    container_name: frontend
+    build:
+      context: ./frontend/
+      dockerfile: Dockerfile
+    depends_on:
+      - gameservice
+      - userservice
+    volumes:
+      - ./default.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - '5173:80'
+    networks:
+      - ufront
+      - gfront
+
   userservice:
     container_name: userservice
     build:
@@ -88,6 +104,7 @@ services:
     ports:
       - '27018:27017'
     networks:
+      - db
       - gameservice
     volumes:
       - game_mongodb_data:/data/db
@@ -95,8 +112,8 @@ services:
       - ./mongo-init-games.js:/docker-entrypoint-initdb.d/mongo-init-games.js:ro
 
 
-  mongo-express:
-    container_name: mongo-express
+  usermongo-express:
+    container_name: usermongo-express
     image: mongo-express:latest
     restart: always
     ports:
@@ -108,25 +125,21 @@ services:
     networks:
       - db
 
+  gamemongo-express:
+    container_name: gamemongo-express
+    image: mongo-express:latest
+    restart: always
+    ports:
+      - '8082:8081'
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@gamemongo:27017
+    depends_on:
+      - gamemongo
+    networks:
+      - db
+
   peerserver:
     container_name: peerserver
     image: peerjs/peerjs-server:latest
     ports:
       - '9000:9000'
-
-
-  frontend:
-    container_name: frontend
-    build:
-      context: ./frontend/
-      dockerfile: Dockerfile
-    depends_on:
-      - gameservice
-      - userservice
-    volumes:
-      - ./default.conf:/etc/nginx/conf.d/default.conf
-    ports:
-      - '5173:80'
-    networks:
-      - ufront
-      - gfront
