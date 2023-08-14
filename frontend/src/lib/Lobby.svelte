@@ -11,6 +11,7 @@
   let showCreateGameModal = false;
 
   onMount(async () => {
+    //* Resets game if user navigates back to lobby or gets kicked from game by socket-connection
     $userState.game = null;
     try {
       showLoadingSpinner = true;

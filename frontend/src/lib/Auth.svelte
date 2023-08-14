@@ -1,9 +1,7 @@
 <script lang="ts">
   import { createForm } from 'svelte-forms-lib';
   import * as yup from 'yup';
-  import userState,{
-    jwt
-  } from '../../state/user';
+  import userState, { jwt } from '../../state/user';
   import { signUp, signIn } from '../services/userService';
   import type { SignInUser, SignUpUser } from '../models/user';
 
@@ -60,7 +58,7 @@
         .required('Please enter your password.')
         .matches(
           /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/,
-          'Password criteria: 1 uppercase, 1 lowercase,1 number',
+          'Password criteria: 1 uppercase, 1 lowercase, 1 number, min. 8 characters',
         ),
       passwordRepeat: yup
         .string()

@@ -62,7 +62,7 @@ export async function createGame(gameName: string): Promise<ResponseGame> {
       else throw new Error(errorMessages.serverError);
     }
 
-    socketService.joinGame(result.data.game.name);
+    socketService.joinGame(result.data.game._id, result.data.game.host);
 
     return result;
   } catch (error) {
@@ -89,7 +89,7 @@ export async function joinGame(gameId: string): Promise<ResponseGame> {
       else throw new Error(errorMessages.serverError);
     }
 
-    socketService.joinGame(result.data.game.name);
+    socketService.joinGame(result.data.game._id, result.data.game.host);
 
     return result;
   } catch (error) {
@@ -116,7 +116,7 @@ export async function leaveGame(gameId: string): Promise<ResponseGame> {
       else throw new Error(errorMessages.serverError);
     }
 
-    socketService.leaveGame(result.data.game.name);
+    socketService.leaveGame(result.data.game._id, result.data.game.host);
 
     return result;
   } catch (error) {
@@ -143,7 +143,7 @@ export async function deleteGame(gameId: string): Promise<ResponseGame> {
       else throw new Error(errorMessages.serverError);
     }
 
-    socketService.endConnection(result.data.game.name);
+    socketService.hostLeft(result.data.game._id, result.data.game.host);
 
     return result;
   } catch (error) {

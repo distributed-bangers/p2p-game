@@ -4,7 +4,8 @@ export enum socketio {
     join = 'join',
     leave = 'leave',
     startGame = 'startGame',
-    endConnection = 'endConnection',
+    hostLeft = 'hostLeft',
+    disconnect = 'disconnect',
 }
 
 export enum responseStatus {
