@@ -1,10 +1,10 @@
 import User from '../model/userModel.js'
 import { createHash, generateJWT } from '../auth.js'
-import { IUser } from '../index.js'
+import { IUser, SignUpUser } from '../index.js'
 import crypto from 'crypto'
 
 export async function loginUserAsync(
-    body: any
+    body: SignUpUser
 ): Promise<{ userid: string; token: string }> {
     let { username, password } = body
     if (!username || !password) {
@@ -26,10 +26,9 @@ export async function loginUserAsync(
 }
 
 export async function createUserAsync(
-    body: any
+    body: SignUpUser
 ): Promise<{ userid: string; token: string }> {
     let { username, password } = body
-    console.log(body)
     if (!username || !password) {
         throw new Error('Bad request')
     }
