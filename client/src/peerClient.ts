@@ -1,6 +1,8 @@
 import { DataConnection, Peer, PeerConnectOption } from 'peerjs'
 
 export default class PeerClient extends Peer {
+    readonly peers = new Set<string>()
+
     private constructor(id = '') {
         super(id)
     }
@@ -19,9 +21,29 @@ export default class PeerClient extends Peer {
 
         return new Promise<DataConnection>(resolve => dataConnection.on('open', () => {
             console.log(`connection to ${peerId} established`)
+            this.peers.add(peerId)
+
+            dataConnection.on('close', () => {
+                this.peers.delete(peerId)
+            })
 
             resolve(dataConnection)
         }))
+    }
+
+    /**
+     * Only establishes a DataConnection if no other DataConnection to that peer is open.
+     * @param peerId
+     * @param options
+     */
+    async uniqueConnect(peerId: string, options?: PeerConnectOption): Promise<DataConnection> {
+        return new Promise<DataConnection>((resolve, reject) => {
+            if (this.peers.has(peerId)) {
+                reject(`connection to ${peerId} already exists`)
+            }
+
+            resolve(this.asyncConnect(peerId, options))
+        })
     }
 
     async joinLobby(lobbyId: string) {
