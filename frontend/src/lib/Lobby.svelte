@@ -24,10 +24,10 @@
     }
   });
 
-  onDestroy(() => {
-    console.log('DESTROY');
-    openGames = [];
-  });
+  // onDestroy(() => {
+  //   console.log('DESTROY');
+  //   openGames = [];
+  // });
 
   const onClickRefresh = async () => {
     try {
