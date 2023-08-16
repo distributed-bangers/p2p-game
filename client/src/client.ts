@@ -7,7 +7,7 @@ function isPlayerState(any: any): any is Input {
 }
 
 function isPlayerSnapshot(any: any): any is PlayerSnapshot {
-    return typeof any === 'object' && any !== null && (any as PlayerSnapshot).position !== undefined
+    return typeof any === 'object' && any !== null && (any as PlayerSnapshot).x !== undefined
 }
 
 interface GameState {
@@ -30,12 +30,44 @@ interface Input {
 }
 
 interface PlayerSnapshot {
-    direction: THREE.Vector3
-    position: THREE.Vector3
+    x: number
+    z: number
+    y: number
+    w: number
 }
 
 interface BulletSnapshot {
 
+}
+
+function roughSizeOfObject(object: any) {
+
+    var objectList = []
+    var stack = [object]
+    var bytes = 0
+
+    while (stack.length) {
+        var value = stack.pop()
+
+        if (typeof value === 'boolean') {
+            bytes += 4
+        } else if (typeof value === 'string') {
+            bytes += value.length * 2
+        } else if (typeof value === 'number') {
+            bytes += 8
+        } else if
+        (
+            typeof value === 'object'
+            && objectList.indexOf(value) === -1
+        ) {
+            objectList.push(value)
+
+            for (var i in value) {
+                stack.push(value[i])
+            }
+        }
+    }
+    return bytes
 }
 
 class GameClient {
@@ -64,22 +96,17 @@ class GameClient {
 
     private onConnection(dataConnection: DataConnection) {
         const peer: Peer = { id: dataConnection.peer, connection: dataConnection, queue: [] }
-        dataConnection.on('data', (data) => {
-            //console.log('Received data')
-
-            if (isPlayerSnapshot(data)) {
-                //console.log(`received Snapshot: ${data}`)
-                const player = this.state[dataConnection.peer]
-                //player.setDirection(data.direction)
-                player.setPosition(data.position)
-            }
-        })
-
         this.peers.push(peer)
 
         const player = new Player('red')
         this.state[peer.id] = player
         scene.add(player)
+        dataConnection.on('data', (data) => {
+            if (isPlayerSnapshot(data)) {
+                const player = this.state[dataConnection.peer].setFromSnapshot(data)
+            }
+        })
+
     }
 
     async connect(id: string) {
@@ -172,22 +199,13 @@ class Player extends THREE.Mesh {
         scene.add(arrowHelper)
     }
 
-    setDirection(direction: THREE.Vector3) {
-        this.lookAt(direction)
-    }
-
-    setPosition(position: THREE.Vector3) {
-        this.position.set(position.x, position.y, position.z)
-    }
-
     getSnapshot(): PlayerSnapshot {
-        const direction = new THREE.Vector3()
-        const position = new THREE.Vector3()
+        return { x: this.position.x, z: this.position.z, y: this.quaternion.y, w: this.quaternion.w }
+    }
 
-        this.getWorldDirection(direction)
-        this.getWorldPosition(position)
-
-        return { direction: direction, position: position }
+    setFromSnapshot(snapshot: PlayerSnapshot) {
+        this.position.set(snapshot.x, this.position.y, snapshot.z)
+        this.setRotationFromQuaternion(new THREE.Quaternion(0, snapshot.y, 0, snapshot.w))
     }
 }
 
@@ -339,14 +357,11 @@ GameClient.initialize().then(async client => {
 
 async function animate() {
     requestAnimationFrame(animate)
-    gameClient.sendSnapshot()
-
     const player = gameClient.player
 
     if (player.state.shootCooldown > 0) {
         player.state.shootCooldown -= 1
     }
-
     if (player.state.moveUp) {
         player.translateZ(0.15)
     }
@@ -365,6 +380,8 @@ async function animate() {
         player.shoot()
         player.state.shootCooldown = 60
     }
+
+    gameClient.sendSnapshot()
 
     const enemies: Player[] = []
 
