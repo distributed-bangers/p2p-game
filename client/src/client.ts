@@ -2,8 +2,12 @@ import * as THREE from 'three'
 import PeerClient from './peerClient'
 import { DataConnection } from 'peerjs'
 
-function isPlayerState(any: any): any is PlayerState {
-    return typeof any === 'object' && any !== null && (any as PlayerState).shootCooldown !== undefined
+function isPlayerState(any: any): any is Input {
+    return typeof any === 'object' && any !== null && (any as Input).shootCooldown !== undefined
+}
+
+function isPlayerSnapshot(any: any): any is PlayerSnapshot {
+    return typeof any === 'object' && any !== null && (any as PlayerSnapshot).position !== undefined
 }
 
 interface GameState {
@@ -13,16 +17,25 @@ interface GameState {
 interface Peer {
     id: string
     connection: DataConnection
-    queue: PlayerState[]
+    queue: Input[]
 }
 
-interface PlayerState {
+interface Input {
     moveUp: boolean
     moveDown: boolean
     moveLeft: boolean
     moveRight: boolean
     shoot: boolean
     shootCooldown: number
+}
+
+interface PlayerSnapshot {
+    direction: THREE.Vector3
+    position: THREE.Vector3
+}
+
+interface BulletSnapshot {
+
 }
 
 class GameClient {
@@ -52,13 +65,18 @@ class GameClient {
     private onConnection(dataConnection: DataConnection) {
         const peer: Peer = { id: dataConnection.peer, connection: dataConnection, queue: [] }
         dataConnection.on('data', (data) => {
-            if (isPlayerState(data)) {
-                peer.queue.push(data as PlayerState)
-            } else {
-                console.error('Received data in wrong format:', data)
+            //console.log('Received data')
+
+            if (isPlayerSnapshot(data)) {
+                //console.log(`received Snapshot: ${data}`)
+                const player = this.state[dataConnection.peer]
+                //player.setDirection(data.direction)
+                player.setPosition(data.position)
             }
         })
+
         this.peers.push(peer)
+
         const player = new Player('red')
         this.state[peer.id] = player
         scene.add(player)
@@ -74,12 +92,12 @@ class GameClient {
         const promises = []
 
         for (const peer of this.peers) {
-            promises.push(new Promise<PlayerState>((resolve) => {
+            promises.push(new Promise<Input>((resolve) => {
                 if (peer.queue.length > 0) {
-                    resolve(peer.queue.shift() as PlayerState)
+                    resolve(peer.queue.shift() as Input)
                 } else {
                     peer.connection.once('data', (data) => {
-                        resolve(data as PlayerState)
+                        resolve(data as Input)
                     })
                 }
             }).then(value => {
@@ -99,16 +117,24 @@ class GameClient {
         }
     }
 
-    updateState(playerId: string, playerState: PlayerState) {
+    updateState(playerId: string, playerState: Input) {
         //console.log(`Updating State of Player ${playerId}: ${playerState}`)
         this.state[playerId].state = playerState
+    }
+
+    sendSnapshot() {
+        const snapshot: PlayerSnapshot = this.player.getSnapshot()
+
+        for (const peer of this.peers) {
+            peer.connection.send(snapshot)
+        }
     }
 }
 
 class Player extends THREE.Mesh {
     bullets: Bullet[] = []
     gun: Gun
-    state: PlayerState = {
+    state: Input = {
         moveUp: false,
         moveDown: false,
         moveLeft: false,
@@ -144,6 +170,24 @@ class Player extends THREE.Mesh {
         bullet.getWorldDirection(direction)
         const arrowHelper = new THREE.ArrowHelper(direction, bullet.position, 100, 'red')
         scene.add(arrowHelper)
+    }
+
+    setDirection(direction: THREE.Vector3) {
+        this.lookAt(direction)
+    }
+
+    setPosition(position: THREE.Vector3) {
+        this.position.set(position.x, position.y, position.z)
+    }
+
+    getSnapshot(): PlayerSnapshot {
+        const direction = new THREE.Vector3()
+        const position = new THREE.Vector3()
+
+        this.getWorldDirection(direction)
+        this.getWorldPosition(position)
+
+        return { direction: direction, position: position }
     }
 }
 
@@ -276,6 +320,8 @@ window.addEventListener('resize', onWindowResize, false)
 const axesHelper = new THREE.AxesHelper(200)
 scene.add(axesHelper)
 
+//const stats = new Stats()
+
 let gameClient: GameClient
 GameClient.initialize().then(async client => {
         gameClient = client
@@ -293,57 +339,57 @@ GameClient.initialize().then(async client => {
 
 async function animate() {
     requestAnimationFrame(animate)
-    await gameClient.getInputs()
+    gameClient.sendSnapshot()
 
-    for (const id of Object.keys(gameClient.state)) {
-        const player = gameClient.state[id]
+    const player = gameClient.player
 
-        if (player.state.shootCooldown > 0) {
-            player.state.shootCooldown -= 1
+    if (player.state.shootCooldown > 0) {
+        player.state.shootCooldown -= 1
+    }
+
+    if (player.state.moveUp) {
+        player.translateZ(0.15)
+    }
+    if (player.state.moveDown) {
+        player.translateZ(-0.15)
+    }
+    if (player.state.moveLeft) {
+        // player.translateX(-0.1)
+        player.rotateY(0.06)
+    }
+    if (player.state.moveRight) {
+        // player.translateX(0.1)
+        player.rotateY(-0.06)
+    }
+    if (player.state.shoot && player.state.shootCooldown === 0) {
+        player.shoot()
+        player.state.shootCooldown = 60
+    }
+
+    const enemies: Player[] = []
+
+    /*
+    for (const peer in gameClient.state) {
+        if (peer !== id) {
+            enemies.push(gameClient.state[peer])
         }
+    }
 
-        if (player.state.moveUp) {
-            player.translateZ(0.15)
-        }
-        if (player.state.moveDown) {
-            player.translateZ(-0.15)
-        }
-        if (player.state.moveLeft) {
-            // player.translateX(-0.1)
-            player.rotateY(0.06)
-        }
-        if (player.state.moveRight) {
-            // player.translateX(0.1)
-            player.rotateY(-0.06)
-        }
-        if (player.state.shoot && player.state.shootCooldown === 0) {
-            player.shoot()
-            player.state.shootCooldown = 60
-        }
+    for (const bullet of player.bullets) {
+        const direction = new THREE.Vector3()
+        bullet.translateZ(0.5)
+        bullet.getWorldDirection(direction)
+        raycaster.set(bullet.position, direction)
 
-        const enemies: Player[] = []
+        for (const enemy of enemies) {
+            const collisionResults = raycaster.intersectObject(enemy)
 
-        for (const peer in gameClient.state) {
-            if (peer !== id) {
-                enemies.push(gameClient.state[peer])
-            }
-        }
-
-        for (const bullet of player.bullets) {
-            const direction = new THREE.Vector3()
-            bullet.translateZ(0.5)
-            bullet.getWorldDirection(direction)
-            raycaster.set(bullet.position, direction)
-
-            for (const enemy of enemies) {
-                const collisionResults = raycaster.intersectObject(enemy)
-
-                if (collisionResults.length > 0 && collisionResults[0].distance < 0.5) {
-                    enemy.material = new THREE.MeshBasicMaterial({ color: 'green' })
-                }
+            if (collisionResults.length > 0 && collisionResults[0].distance < 0.5) {
+                enemy.material = new THREE.MeshBasicMaterial({ color: 'green' })
             }
         }
     }
+}*/
 
     /*
     camera.position.x = gameClient.player.position.x
@@ -351,7 +397,7 @@ async function animate() {
     camera.position.z = gameClient.player.position.z + 5
     */
 
-    // controls.update()
+// controls.update()
 
     render()
 }
