@@ -27,7 +27,7 @@ jwt.subscribe(async (value) => {
   document.cookie = value;
   try {
     const { userid, username } = await authenticateJWT(value);
-    user.update((user) => ({ ...user, userid, username }));
+    user.update((user) => ({ ...user, userid, username, authenticated: true }));
   } catch (e) {}
 });
 
