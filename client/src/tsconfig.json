@@ -1,7 +1,8 @@
 {
     "compilerOptions": {
-        "target": "ES6",
-        "moduleResolution": "node",
+        "module": "ESNext",
+        "target": "ES2017",
+        "moduleResolution": "nodenext",
         "strict": true,
         "allowSyntheticDefaultImports": true
     },

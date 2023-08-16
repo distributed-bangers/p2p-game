@@ -1,10 +1,34 @@
 import * as THREE from 'three'
 import PeerClient from './peerClient'
 import { DataConnection } from 'peerjs'
+import { BufferGeometry } from 'three'
+
+// Physics
+const physicsEngine = new Worker('physics.js')
+
+// Rendering
+const canvas = document.getElementById('canvas') as HTMLCanvasElement
+const offscreen = canvas.transferControlToOffscreen()
+
+const renderThread = new Worker('render.js')
+renderThread.postMessage({
+    canvas: offscreen,
+    width: canvas.clientWidth,
+    height: canvas.clientHeight,
+}, [offscreen])
+
+function onWindowResize() {
+    renderThread.postMessage({
+        width: canvas.clientWidth,
+        height: canvas.clientHeight,
+    })
+}
 
 function isPlayerState(any: any): any is PlayerState {
-    return typeof any === 'object' && any !== null && (any as PlayerState).shootCooldown !== undefined
+    return typeof any === 'object' && any !== null && (any as PlayerState).moveUp !== undefined
 }
+
+physicsEngine.postMessage('test')
 
 interface GameState {
     [playerId: string]: Player
@@ -13,16 +37,27 @@ interface GameState {
 interface Peer {
     id: string
     connection: DataConnection
-    queue: PlayerState[]
 }
 
-interface PlayerState {
+export interface PlayerState {
     moveUp: boolean
     moveDown: boolean
     moveLeft: boolean
     moveRight: boolean
     shoot: boolean
     shootCooldown: number
+}
+
+physicsEngine.onmessage = (e) => {
+    if (typeof e.data === 'string') {
+        console.log('my id is', e.data)
+        gameClient.id = e.data
+    } // else if ((e.data as AddPlayerEvent).id !== undefined) {
+        // gameClient.addPlayer(e.data.id)
+    //}
+    else {
+        gameClient.stateChanges = e.data
+    }
 }
 
 class GameClient {
@@ -32,6 +67,7 @@ class GameClient {
     player: Player = new Player('blue')
     peers: Peer[] = []
     state: GameState = {}
+    stateChanges: GameStateChange = {}
 
     private constructor(peerClient: PeerClient) {
         this.peerClient = peerClient
@@ -50,7 +86,7 @@ class GameClient {
     }
 
     private onConnection(dataConnection: DataConnection) {
-        const peer: Peer = { id: dataConnection.peer, connection: dataConnection, queue: [] }
+        const peer: Peer = { id: dataConnection.peer, connection: dataConnection }
         dataConnection.on('data', (data) => {
             if (isPlayerState(data)) {
                 peer.queue.push(data as PlayerState)
@@ -60,8 +96,8 @@ class GameClient {
         })
         this.peers.push(peer)
         const player = new Player('red')
-        this.state[peer.id] = player
-        scene.add(player)
+        this.player.this.state[peer.id] = player
+        this.addPlayer()
     }
 
     async connect(id: string) {
@@ -70,38 +106,43 @@ class GameClient {
         this.onConnection(dataConnection)
     }
 
-    async getInputs() {
-        const promises = []
+    /*
+        async getInputs() {
+            const promises = []
 
-        for (const peer of this.peers) {
-            promises.push(new Promise<PlayerState>((resolve) => {
-                if (peer.queue.length > 0) {
-                    resolve(peer.queue.shift() as PlayerState)
-                } else {
-                    peer.connection.once('data', (data) => {
-                        resolve(data as PlayerState)
-                    })
-                }
-            }).then(value => {
-                this.updateState(peer.id, value)
-            }).catch(reason => console.error(reason)))
+            for (const peer of this.peers) {
+                promises.push(new Promise<PlayerState>((resolve) => {
+                    if (peer.queue.length > 0) {
+                        resolve(peer.queue.shift() as PlayerState)
+                    } else {
+                        peer.connection.once('data', (data) => {
+                            resolve(data as PlayerState)
+                        })
+                    }
+                }).then(value => {
+                    this.updateState(peer.id, value)
+                }).catch(reason => console.error(reason)))
+            }
+
+            this.publishState()
+
+            await Promise.all(promises)
         }
 
-        this.publishState()
-
-        await Promise.all(promises)
-    }
-
-    publishState() {
-        for (const peer of this.peers) {
-            //console.log(`Publishing State of Player ${this.id}: ${this.player.state}`)
-            peer.connection.send(this.player.state)
+        publishState() {
+            for (const peer of this.peers) {
+                //console.log(`Publishing State of Player ${this.id}: ${this.player.state}`)
+                peer.connection.send(this.player.state)
+            }
         }
-    }
 
-    updateState(playerId: string, playerState: PlayerState) {
-        //console.log(`Updating State of Player ${playerId}: ${playerState}`)
-        this.state[playerId].state = playerState
+        updateState(playerId: string, playerState: PlayerState) {
+            this.state[playerId].state = playerState
+        }
+
+    */
+    private addPlayer() {
+
     }
 }
 
@@ -158,41 +199,20 @@ class Gun extends THREE.Mesh {
 
 class Bullet extends THREE.Mesh {
     constructor() {
+        const gl = canvas.getContext('webgl') as WebGLRenderingContext
+        const buffer = gl.createBuffer()
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+        const lol = new THREE.GLBufferAttribute(buffer as WebGLBuffer, gl.UNSIGNED_BYTE, 3, 1, 1)
+
         const bulletGeometry = new THREE.SphereGeometry(0.1)
+        bulletGeometry.setAttribute('position', lol)
         const bulletMaterial = new THREE.MeshBasicMaterial({ color: 'red' })
 
         super(bulletGeometry, bulletMaterial)
     }
 }
 
-function createBackground() {
-    const backgroundGeometry = new THREE.PlaneGeometry(100, 100)
-    const backgroundMaterial = new THREE.MeshBasicMaterial()
-    const background = new THREE.Mesh(backgroundGeometry, backgroundMaterial)
 
-    background.rotateX(THREE.MathUtils.degToRad(270))
-
-    scene.add(background)
-}
-
-function createCamera() {
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
-    camera.position.y = 20
-    camera.position.z = 5
-    camera.lookAt(0, 0, 0)
-    return camera
-}
-
-function render() {
-    renderer.render(scene, camera)
-}
-
-function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight
-    camera.updateProjectionMatrix()
-    renderer.setSize(window.innerWidth, window.innerHeight)
-    render()
-}
 
 
 function onKeyDown(event: KeyboardEvent) {
@@ -216,15 +236,17 @@ function onKeyDown(event: KeyboardEvent) {
         case 'KeyD':
             gameClient.player.state.moveRight = true
             break
+
         case 'Space':
             gameClient.player.state.shoot = true
             break
     }
+
+    // physicsEngine.postMessage(gameClient.player.state)
 }
 
 function onKeyUp(event: KeyboardEvent) {
     switch (event.code) {
-
         case 'ArrowUp':
         case 'KeyW':
             gameClient.player.state.moveUp = false
@@ -249,34 +271,21 @@ function onKeyUp(event: KeyboardEvent) {
             gameClient.player.state.shoot = false
             break
     }
+
+    // physicsEngine.postMessage(gameClient.player.state)
 }
 
-// Scene
-const scene = new THREE.Scene()
 const raycaster = new THREE.Raycaster()
-
-// Camera
-const camera = createCamera()
-
-// Renderer
-const renderer = new THREE.WebGLRenderer({ antialias: true })
-renderer.setSize(window.innerWidth, window.innerHeight)
-document.body.appendChild(renderer.domElement)
 
 // Controls
 // const controls = new OrbitControls(camera, renderer.domElement)
 
-// Objects
-createBackground()
 
 // Event Listeners
-window.addEventListener('resize', onWindowResize, false)
+//window.addEventListener('resize', onWindowResize, false)
 
-// Helper
-const axesHelper = new THREE.AxesHelper(200)
-scene.add(axesHelper)
 
-let gameClient: GameClient
+export let gameClient: GameClient
 GameClient.initialize().then(async client => {
         gameClient = client
         document.addEventListener('keydown', onKeyDown)
@@ -291,32 +300,30 @@ GameClient.initialize().then(async client => {
     },
 )
 
-async function animate() {
-    requestAnimationFrame(animate)
-    await gameClient.getInputs()
 
+function animate() {
+    requestAnimationFrame(animate)
     for (const id of Object.keys(gameClient.state)) {
         const player = gameClient.state[id]
+        const inputs = gameClient.stateChanges[id]
 
         if (player.state.shootCooldown > 0) {
             player.state.shootCooldown -= 1
         }
 
-        if (player.state.moveUp) {
+        if (inputs.moveUp) {
             player.translateZ(0.15)
         }
-        if (player.state.moveDown) {
+        if (inputs.moveDown) {
             player.translateZ(-0.15)
         }
-        if (player.state.moveLeft) {
-            // player.translateX(-0.1)
+        if (inputs.moveLeft) {
             player.rotateY(0.06)
         }
-        if (player.state.moveRight) {
-            // player.translateX(0.1)
+        if (inputs.moveRight) {
             player.rotateY(-0.06)
         }
-        if (player.state.shoot && player.state.shootCooldown === 0) {
+        if (inputs.shoot && player.state.shootCooldown === 0) {
             player.shoot()
             player.state.shootCooldown = 60
         }
@@ -352,6 +359,4 @@ async function animate() {
     */
 
     // controls.update()
-
-    render()
 }
