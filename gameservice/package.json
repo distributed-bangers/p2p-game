@@ -26,6 +26,7 @@
     "@types/jsonwebtoken": "^9.0.2",
     "@types/mongoose": "^5.11.97",
     "@types/node": "^20.4.2",
+    "@types/socket.io": "^3.0.2",
     "@types/uuid": "^9.0.2",
     "prettier": "^3.0.0",
     "typescript": "^5.1.6"
