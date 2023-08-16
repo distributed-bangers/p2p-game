@@ -43,7 +43,7 @@ export async function authenticateJWT(
 export const generateJWT = (user: IUser): string => {
     const accessTokenSecret: Secret = c.get('token_secret')!
     return jwt.sign(
-        { userId: user._id.toString(), username: user.username },
+        { userid: user._id.toString(), username: user.username },
         accessTokenSecret,
         {
             expiresIn: '1 days',
