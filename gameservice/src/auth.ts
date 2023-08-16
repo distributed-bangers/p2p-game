@@ -2,8 +2,7 @@ import dotenv from 'dotenv'
 import { NextFunction, Request, Response } from 'express'
 dotenv.config({ path: '../../src/config.env' })
 import jwt, { Secret } from 'jsonwebtoken'
-import { jrestStatus, responseStatus } from './constants/constants'
-import { error } from 'console'
+import { jrestStatus, responseStatus } from './constants/constants.js'
 
 export async function authenticateJWT(
     req: Request,

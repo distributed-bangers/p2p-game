@@ -3,15 +3,16 @@ import {
     getOneUser,
     login,
     logoutUser,
-    signIn,
+    signUp,
 } from '../controllers/userController.js'
 import { authenticateJWT } from '../middleware/auth.js'
 
 const router = Router()
+router.route('/').post(signUp)
+router.route('/login').post(login)
 
-router.route('/').post(signIn).get(login)
+// router.use(authenticateJWT)
 
-router.use(authenticateJWT)
 router.route('/id').get(getOneUser)
 router.route('/logout').post(logoutUser)
 export default router

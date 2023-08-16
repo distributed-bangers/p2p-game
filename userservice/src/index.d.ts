@@ -1,7 +1,7 @@
 import { Request } from 'express'
+import { JwtPayload } from 'jsonwebtoken'
 import { Query } from 'express-serve-static-core'
 import mongoose from 'mongoose'
-
 export {}
 export interface TypedRequest<T extends Query, U> extends CustomReq {
     body: U
@@ -33,4 +33,8 @@ export interface IPayload {
     iat: number
     exp: number
     token?: string
+}
+export interface SignUpUser {
+    username: string
+    password: string
 }

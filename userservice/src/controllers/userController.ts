@@ -4,10 +4,19 @@ import {
     loginUserAsync,
     logoutOneUserAsync,
 } from '../services/userServices.js'
-import { Request, Response } from 'express'
-import { IUser, TypedRequestQuery, CustomReq } from '../index.js'
+import { Response } from 'express'
+import {
+    IUser,
+    SignUpUser,
+    TypedRequestBody,
+    TypedRequestQuery,
+    CustomReq,
+} from '../index.js'
 
-export const signIn = async (req: Request, res: Response) => {
+export const signUp = async (
+    req: TypedRequestBody<SignUpUser>,
+    res: Response
+) => {
     try {
         const token = await createUserAsync(req.body)
         res.status(201).json({
@@ -22,7 +31,10 @@ export const signIn = async (req: Request, res: Response) => {
     }
 }
 
-export const login = async (req: Request, res: Response) => {
+export const login = async (
+    req: TypedRequestBody<SignUpUser>,
+    res: Response
+) => {
     try {
         const token = await loginUserAsync(req.body)
         res.status(201).json({

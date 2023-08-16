@@ -1,21 +1,20 @@
 import User from '../model/userModel.js'
 import { createHash, generateJWT } from '../middleware/auth.js'
-import { IPayload, IUser } from '../index.js'
+import { IPayload, IUser, SignUpUser } from '../index.js'
 import crypto from 'crypto'
 import { redis_connection } from '../middleware/redis.js'
 
-export async function loginUserAsync(body: any) {
+export async function loginUserAsync(body: SignUpUser): Promise<string> {
     let { username, password } = body
     if (!username || !password) {
         throw new Error('Bad request')
     }
-    const user = await checkUserExistence({ username: username })
+    const user = await checkUserExistence(username)
     if (!user) {
         throw new Error("User doesn't exists!")
     } else if (user.password == createHash(user.salt, password)) {
         try {
-            const token = generateJWT(user)
-            return token!
+            return generateJWT(user)
         } catch (error) {
             throw error
         }
@@ -24,13 +23,12 @@ export async function loginUserAsync(body: any) {
     }
 }
 
-export async function createUserAsync(body: any): Promise<string> {
+export async function createUserAsync(body: SignUpUser): Promise<string> {
     let { username, password } = body
-    console.log(body)
     if (!username || !password) {
         throw new Error('Bad request')
     }
-    const userExistence = await checkUserExistence({ username: username })
+    const userExistence = await checkUserExistence(username)
     if (userExistence) {
         throw new Error('User with this username already exists}')
     } else {
@@ -43,30 +41,29 @@ export async function createUserAsync(body: any): Promise<string> {
                 createdDate: new Date(),
             })
             await user.save()
-            const token = generateJWT(user)
-            return token!
+            return generateJWT(user)
         } catch (error) {
             throw error
         }
     }
 }
 
-export async function getOneUserAsync(id: string): Promise<object> {
-    if (!id) {
+export async function getOneUserAsync(username: string): Promise<object> {
+    if (!username) {
         throw new Error('Bad request')
     }
-    const user = await checkUserExistence({ _id: id })
+    const user = await checkUserExistence(username)
     if (!user) {
-        throw new Error("User doesn't exist!")
+        throw new Error("User doesn't exists!")
     } else {
         return user
     }
 }
 
-async function checkUserExistence(obj: object): Promise<null | IUser> {
+async function checkUserExistence(username: string): Promise<null | IUser> {
     let existingUser
     try {
-        existingUser = <IUser>await User.findOne(obj)
+        existingUser = <IUser>await User.findOne({ username: username })
     } catch (error) {
         throw error
     }
@@ -78,11 +75,11 @@ async function checkUserExistence(obj: object): Promise<null | IUser> {
 }
 
 export async function logoutOneUserAsync(payload: IPayload): Promise<void> {
-    const { userId, token } = payload
-    if (userId == null) {
+    const { username, token } = payload
+    if (username == null) {
         throw new Error('Bad request')
     }
-    const userExistence = checkUserExistence({ _id: userId })
+    const userExistence = checkUserExistence(username)
     if (!userExistence) {
         throw new Error("User doesn't exist!")
     } else {
