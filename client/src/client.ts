@@ -2,8 +2,8 @@ import * as THREE from 'three'
 import PeerClient from './peerClient'
 import { DataConnection } from 'peerjs'
 
-function isPlayerState(any: any): any is Input {
-    return typeof any === 'object' && any !== null && (any as Input).shootCooldown !== undefined
+function isPlayerState(any: any): any is Inputs {
+    return typeof any === 'object' && any !== null && (any as Inputs).moveUp !== undefined
 }
 
 function isPlayerSnapshot(any: any): any is PlayerSnapshot {
@@ -17,16 +17,14 @@ interface GameState {
 interface Peer {
     id: string
     connection: DataConnection
-    queue: Input[]
 }
 
-interface Input {
+interface Inputs {
     moveUp: boolean
     moveDown: boolean
     moveLeft: boolean
     moveRight: boolean
     shoot: boolean
-    shootCooldown: number
 }
 
 interface PlayerSnapshot {
@@ -74,6 +72,13 @@ class GameClient {
     private peerClient: PeerClient
 
     id: string
+    inputs: Inputs = {
+        moveDown: false,
+        moveLeft: false,
+        moveRight: false,
+        moveUp: false,
+        shoot: false,
+    }
     player: Player = new Player('blue')
     peers: Peer[] = []
     state: GameState = {}
@@ -95,7 +100,7 @@ class GameClient {
     }
 
     private onConnection(dataConnection: DataConnection) {
-        const peer: Peer = { id: dataConnection.peer, connection: dataConnection, queue: [] }
+        const peer: Peer = { id: dataConnection.peer, connection: dataConnection }
         this.peers.push(peer)
 
         const player = new Player('red')
@@ -103,7 +108,7 @@ class GameClient {
         scene.add(player)
         dataConnection.on('data', (data) => {
             if (isPlayerSnapshot(data)) {
-                const player = this.state[dataConnection.peer].setFromSnapshot(data)
+                this.state[dataConnection.peer].setFromSnapshot(data)
             }
         })
 
@@ -113,40 +118,6 @@ class GameClient {
         const dataConnection = await this.peerClient.asyncConnect(id)
 
         this.onConnection(dataConnection)
-    }
-
-    async getInputs() {
-        const promises = []
-
-        for (const peer of this.peers) {
-            promises.push(new Promise<Input>((resolve) => {
-                if (peer.queue.length > 0) {
-                    resolve(peer.queue.shift() as Input)
-                } else {
-                    peer.connection.once('data', (data) => {
-                        resolve(data as Input)
-                    })
-                }
-            }).then(value => {
-                this.updateState(peer.id, value)
-            }).catch(reason => console.error(reason)))
-        }
-
-        this.publishState()
-
-        await Promise.all(promises)
-    }
-
-    publishState() {
-        for (const peer of this.peers) {
-            //console.log(`Publishing State of Player ${this.id}: ${this.player.state}`)
-            peer.connection.send(this.player.state)
-        }
-    }
-
-    updateState(playerId: string, playerState: Input) {
-        //console.log(`Updating State of Player ${playerId}: ${playerState}`)
-        this.state[playerId].state = playerState
     }
 
     sendSnapshot() {
@@ -161,14 +132,7 @@ class GameClient {
 class Player extends THREE.Mesh {
     bullets: Bullet[] = []
     gun: Gun
-    state: Input = {
-        moveUp: false,
-        moveDown: false,
-        moveLeft: false,
-        moveRight: false,
-        shoot: false,
-        shootCooldown: 0,
-    }
+    shootCooldown = 0
 
     constructor(color: THREE.ColorRepresentation) {
         const playerGeometry = new THREE.CapsuleGeometry(1, 1, 4, 8)
@@ -258,57 +222,53 @@ function onWindowResize() {
 
 
 function onKeyDown(event: KeyboardEvent) {
+    const inputs = gameClient.inputs
+
     switch (event.code) {
         case 'ArrowUp':
         case 'KeyW':
-            gameClient.player.state.moveUp = true
+            inputs.moveUp = true
             break
-
         case 'ArrowLeft':
         case 'KeyA':
-            gameClient.player.state.moveLeft = true
+            inputs.moveLeft = true
             break
-
         case 'ArrowDown':
         case 'KeyS':
-            gameClient.player.state.moveDown = true
+            inputs.moveDown = true
             break
-
         case 'ArrowRight':
         case 'KeyD':
-            gameClient.player.state.moveRight = true
+            inputs.moveRight = true
             break
         case 'Space':
-            gameClient.player.state.shoot = true
+            inputs.shoot = true
             break
     }
 }
 
 function onKeyUp(event: KeyboardEvent) {
-    switch (event.code) {
+    const inputs = gameClient.inputs
 
+    switch (event.code) {
         case 'ArrowUp':
         case 'KeyW':
-            gameClient.player.state.moveUp = false
+            inputs.moveUp = false
             break
-
         case 'ArrowLeft':
         case 'KeyA':
-            gameClient.player.state.moveLeft = false
+            inputs.moveLeft = false
             break
-
         case 'ArrowDown':
         case 'KeyS':
-            gameClient.player.state.moveDown = false
+            inputs.moveDown = false
             break
-
         case 'ArrowRight':
         case 'KeyD':
-            gameClient.player.state.moveRight = false
+            inputs.moveRight = false
             break
-
         case 'Space':
-            gameClient.player.state.shoot = false
+            inputs.shoot = false
             break
     }
 }
@@ -357,28 +317,30 @@ GameClient.initialize().then(async client => {
 
 async function animate() {
     requestAnimationFrame(animate)
+
+    const inputs = gameClient.inputs
     const player = gameClient.player
 
-    if (player.state.shootCooldown > 0) {
-        player.state.shootCooldown -= 1
+    if (player.shootCooldown > 0) {
+        player.shootCooldown -= 1
     }
-    if (player.state.moveUp) {
+    if (inputs.moveUp) {
         player.translateZ(0.15)
     }
-    if (player.state.moveDown) {
+    if (inputs.moveDown) {
         player.translateZ(-0.15)
     }
-    if (player.state.moveLeft) {
+    if (inputs.moveLeft) {
         // player.translateX(-0.1)
         player.rotateY(0.06)
     }
-    if (player.state.moveRight) {
+    if (inputs.moveRight) {
         // player.translateX(0.1)
         player.rotateY(-0.06)
     }
-    if (player.state.shoot && player.state.shootCooldown === 0) {
+    if (inputs.shoot && player.shootCooldown === 0) {
         player.shoot()
-        player.state.shootCooldown = 60
+        player.shootCooldown = 60
     }
 
     gameClient.sendSnapshot()
