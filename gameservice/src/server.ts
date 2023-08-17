@@ -1,14 +1,10 @@
 import server from './socketios.js'
-import dotenv from 'dotenv'
-dotenv.config({ path: './src/config.env' })
 import mongoose from 'mongoose'
+import config from 'config'
 
-const port = process.env.PORT
+const port = <string>config.get('server.port')
 
-const DBConnection = process.env.DATABASE!.replace(
-    '<PASSWORD>',
-    process.env.DATABASE_PASSWORD!
-)
+const DBConnection = <string>config.get('mongo.conn_string')
 
 console.log(DBConnection)
 

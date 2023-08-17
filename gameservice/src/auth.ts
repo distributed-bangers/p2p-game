@@ -1,8 +1,7 @@
-import dotenv from 'dotenv'
 import { NextFunction, Request, Response } from 'express'
-dotenv.config({ path: '../../src/config.env' })
 import jwt, { Secret } from 'jsonwebtoken'
 import { jrestStatus, responseStatus } from './constants/constants.js'
+import config from 'config'
 
 export async function authenticateJWT(
     req: Request,
@@ -10,7 +9,7 @@ export async function authenticateJWT(
     next: NextFunction
 ) {
     const authHeader = req.headers.authorization
-    const accessTokenSecret: Secret = process.env.TOKEN_SECRET!
+    const accessTokenSecret: Secret = <string>config.get('token_secret')
 
     try {
         if (authHeader) {

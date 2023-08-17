@@ -2,14 +2,13 @@ import httpServer from './app.js'
 import { DisconnectReason, Server } from 'socket.io'
 import { IUser } from './models/models.js'
 import { socketio } from './constants/constants.js'
-import dotenv from 'dotenv'
-dotenv.config({ path: './src/config.env' })
 import Game from '../src/models/models.js'
+import config from 'config'
 
-const clientURL = process.env.CLIENTURL
+const clientURL = <string>config.get('client.url')
 
 const io = new Server(httpServer, {
-    path:"/socket.io",
+    path: '/socketio/v1',
     cors: {
         origin: clientURL,
         optionsSuccessStatus: 200,

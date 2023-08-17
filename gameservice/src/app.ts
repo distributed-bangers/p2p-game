@@ -3,14 +3,9 @@ import gameRoutes from './routes/gameRoutes.js'
 import { apiURL } from './constants/constants.js'
 import { createServer } from 'http'
 import cors, { CorsOptions } from 'cors'
-import dotenv from 'dotenv'
-dotenv.config({ path: './src/config.env' })
+import config from 'config'
 
-// //* app.js is mainly for applying middleware
-// if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
-
-const clientUrl = process.env.CLIENTURL
-console.log(clientUrl)
+const clientUrl = <string>config.get('client.url')
 
 let corsOptions: CorsOptions = {
     origin: clientUrl,

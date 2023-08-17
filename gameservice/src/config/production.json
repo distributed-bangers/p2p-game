@@ -1,0 +1,8 @@
+{
+    "server": {
+        "port": 8080
+    },
+    "mongo": {
+        "conn_string": "mongodb://gs_admin:root@gamemongo:27017/gameservice"
+    }
+}
