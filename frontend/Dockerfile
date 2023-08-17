@@ -1,9 +1,4 @@
 FROM node:lts-alpine as build-stage
-ENV VITE_USER_API=http://localhost:5173
-ENV VITE_GAME_API=http://localhost:5173
-ENV VITE_SOCKET_URL=http://localhost:5173
-ENV VITE_API_VERSION=/api/v1
-ENV VITE_TOKEN_SECRET=4ecb7c5a013cf78fd10bcc91b8ff73f779b77fa500f03c4485831bcd5c8601af
 
 RUN mkdir -p /app
 WORKDIR /app

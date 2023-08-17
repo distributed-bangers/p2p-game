@@ -21,7 +21,7 @@ export class socketService {
 
     if (!socketService.socket) {
       socketService.socket = io(socketService.socketServer, {
-        path: '/socket.io',
+        path: import.meta.env.VITE_SOCKET_VERSION,
         extraHeaders: {
           gameid: gameId,
           hostid: gameHost.userid,
