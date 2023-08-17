@@ -21,6 +21,7 @@ export class socketService {
 
     if (!socketService.socket) {
       socketService.socket = io(socketService.socketServer, {
+        path: '/socket.io',
         extraHeaders: {
           gameid: gameId,
           hostid: gameHost.userid,

@@ -9,6 +9,7 @@ import Game from '../src/models/models.js'
 const clientURL = process.env.CLIENTURL
 
 const io = new Server(httpServer, {
+    path:"/socket.io",
     cors: {
         origin: clientURL,
         optionsSuccessStatus: 200,
