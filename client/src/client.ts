@@ -2,12 +2,10 @@ import * as THREE from 'three'
 import PeerClient from './peerClient'
 import { DataConnection } from 'peerjs'
 
-function isPlayerState(any: any): any is Inputs {
-    return typeof any === 'object' && any !== null && (any as Inputs).moveUp !== undefined
-}
+let showHelpers = false
 
-function isPlayerSnapshot(any: any): any is PlayerSnapshot {
-    return typeof any === 'object' && any !== null && (any as PlayerSnapshot).x !== undefined
+function isSceneSnapshot(any: any): any is SceneSnapshot {
+    return typeof any === 'object' && any !== null && (any as SceneSnapshot).player !== undefined && (any as SceneSnapshot).bullets !== undefined
 }
 
 interface GameState {
@@ -27,51 +25,21 @@ interface Inputs {
     shoot: boolean
 }
 
-interface PlayerSnapshot {
+interface Snapshot {
     x: number
     z: number
     y: number
     w: number
 }
 
-interface BulletSnapshot {
-
-}
-
-function roughSizeOfObject(object: any) {
-
-    var objectList = []
-    var stack = [object]
-    var bytes = 0
-
-    while (stack.length) {
-        var value = stack.pop()
-
-        if (typeof value === 'boolean') {
-            bytes += 4
-        } else if (typeof value === 'string') {
-            bytes += value.length * 2
-        } else if (typeof value === 'number') {
-            bytes += 8
-        } else if
-        (
-            typeof value === 'object'
-            && objectList.indexOf(value) === -1
-        ) {
-            objectList.push(value)
-
-            for (var i in value) {
-                stack.push(value[i])
-            }
-        }
-    }
-    return bytes
+interface SceneSnapshot {
+    player: Snapshot
+    bullets: Snapshot[]
 }
 
 class GameClient {
     private peerClient: PeerClient
-
-    id: string
+    readonly id: string
     inputs: Inputs = {
         moveDown: false,
         moveLeft: false,
@@ -80,7 +48,7 @@ class GameClient {
         shoot: false,
     }
     player: Player = new Player('blue')
-    peers: Peer[] = []
+    private peers: Peer[] = []
     state: GameState = {}
 
     private constructor(peerClient: PeerClient) {
@@ -94,8 +62,9 @@ class GameClient {
         scene.add(this.player)
     }
 
-    static async initialize() {
-        const peerClient = await PeerClient.initialize()
+    static async initialize(id?: string) {
+        const peerClient = await PeerClient.initialize(id)
+
         return new GameClient(peerClient)
     }
 
@@ -106,9 +75,21 @@ class GameClient {
         const player = new Player('red')
         this.state[peer.id] = player
         scene.add(player)
+
         dataConnection.on('data', (data) => {
-            if (isPlayerSnapshot(data)) {
-                this.state[dataConnection.peer].setFromSnapshot(data)
+            if (isSceneSnapshot(data)) {
+                const player = this.state[dataConnection.peer]
+                player.setFromSnapshot(data.player)
+
+                while (player.bullets.length !== data.bullets.length) {
+                    if (player.bullets.length < data.bullets.length) {
+                        player.spawnBullet()
+                    } else {
+                        scene.remove(player.bullets.pop() as Bullet)
+                    }
+                }
+
+                player.bullets.forEach((bullet, index) => bullet.setFromSnapshot(data.bullets[index]))
             }
         })
 
@@ -121,7 +102,10 @@ class GameClient {
     }
 
     sendSnapshot() {
-        const snapshot: PlayerSnapshot = this.player.getSnapshot()
+        const snapshot: SceneSnapshot = {
+            bullets: this.player.bullets.map(bullet => bullet.getSnapshot()),
+            player: this.player.getSnapshot(),
+        }
 
         for (const peer of this.peers) {
             peer.connection.send(snapshot)
@@ -129,7 +113,25 @@ class GameClient {
     }
 }
 
-class Player extends THREE.Mesh {
+interface Snapshotable {
+    getSnapshot(): Snapshot
+
+    setFromSnapshot(snapshot: Snapshot): void
+}
+
+
+class PhysicsObject extends THREE.Mesh implements Snapshotable {
+    getSnapshot(): Snapshot {
+        return { x: this.position.x, z: this.position.z, y: this.quaternion.y, w: this.quaternion.w }
+    }
+
+    setFromSnapshot(snapshot: Snapshot) {
+        this.position.set(snapshot.x, this.position.y, snapshot.z)
+        this.setRotationFromQuaternion(new THREE.Quaternion(0, snapshot.y, 0, snapshot.w))
+    }
+}
+
+class Player extends PhysicsObject {
     bullets: Bullet[] = []
     gun: Gun
     shootCooldown = 0
@@ -148,7 +150,7 @@ class Player extends THREE.Mesh {
         this.gun.rotateX(THREE.MathUtils.degToRad(90))
     }
 
-    shoot() {
+    spawnBullet() {
         const bullet = new Bullet()
 
         this.gun.getWorldPosition(bullet.position)
@@ -157,19 +159,36 @@ class Player extends THREE.Mesh {
         scene.add(bullet)
         this.bullets.push(bullet)
 
-        const direction = new THREE.Vector3
-        bullet.getWorldDirection(direction)
-        const arrowHelper = new THREE.ArrowHelper(direction, bullet.position, 100, 'red')
-        scene.add(arrowHelper)
+        if(showHelpers) {
+            const direction = new THREE.Vector3
+            bullet.getWorldDirection(direction)
+
+            const arrowHelper = new THREE.ArrowHelper(direction, bullet.position, 100, 'red')
+            scene.add(arrowHelper)
+        }
     }
 
-    getSnapshot(): PlayerSnapshot {
-        return { x: this.position.x, z: this.position.z, y: this.quaternion.y, w: this.quaternion.w }
-    }
 
-    setFromSnapshot(snapshot: PlayerSnapshot) {
-        this.position.set(snapshot.x, this.position.y, snapshot.z)
-        this.setRotationFromQuaternion(new THREE.Quaternion(0, snapshot.y, 0, snapshot.w))
+    update(inputs: Inputs) {
+        if (this.shootCooldown > 0) {
+            this.shootCooldown -= 1
+        }
+        if (inputs.moveUp) {
+            this.translateZ(0.15)
+        }
+        if (inputs.moveDown) {
+            this.translateZ(-0.15)
+        }
+        if (inputs.moveLeft) {
+            this.rotateY(0.06)
+        }
+        if (inputs.moveRight) {
+            this.rotateY(-0.06)
+        }
+        if (inputs.shoot && this.shootCooldown === 0) {
+            this.spawnBullet()
+            this.shootCooldown = 60
+        }
     }
 }
 
@@ -182,7 +201,7 @@ class Gun extends THREE.Mesh {
     }
 }
 
-class Bullet extends THREE.Mesh {
+class Bullet extends PhysicsObject {
     constructor() {
         const bulletGeometry = new THREE.SphereGeometry(0.1)
         const bulletMaterial = new THREE.MeshBasicMaterial({ color: 'red' })
@@ -319,42 +338,18 @@ async function animate() {
     requestAnimationFrame(animate)
 
     const inputs = gameClient.inputs
-    const player = gameClient.player
-
-    if (player.shootCooldown > 0) {
-        player.shootCooldown -= 1
-    }
-    if (inputs.moveUp) {
-        player.translateZ(0.15)
-    }
-    if (inputs.moveDown) {
-        player.translateZ(-0.15)
-    }
-    if (inputs.moveLeft) {
-        // player.translateX(-0.1)
-        player.rotateY(0.06)
-    }
-    if (inputs.moveRight) {
-        // player.translateX(0.1)
-        player.rotateY(-0.06)
-    }
-    if (inputs.shoot && player.shootCooldown === 0) {
-        player.shoot()
-        player.shootCooldown = 60
-    }
-
-    gameClient.sendSnapshot()
+    gameClient.player.update(inputs)
 
     const enemies: Player[] = []
 
-    /*
     for (const peer in gameClient.state) {
-        if (peer !== id) {
+        if (peer !== gameClient.id) {
             enemies.push(gameClient.state[peer])
         }
     }
 
-    for (const bullet of player.bullets) {
+    for (const bullet of gameClient.player.bullets) {
+        console.log(bullet.quaternion)
         const direction = new THREE.Vector3()
         bullet.translateZ(0.5)
         bullet.getWorldDirection(direction)
@@ -368,15 +363,8 @@ async function animate() {
             }
         }
     }
-}*/
 
-    /*
-    camera.position.x = gameClient.player.position.x
-    camera.position.y = gameClient.player.position.y + 20
-    camera.position.z = gameClient.player.position.z + 5
-    */
-
-// controls.update()
+    gameClient.sendSnapshot()
 
     render()
 }
