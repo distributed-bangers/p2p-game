@@ -5,8 +5,6 @@ import cors, { CorsOptions } from 'cors'
 import config from 'config'
 import swaggerUi from 'swagger-ui-express'
 import swaggerFile from './swagger.json' assert { type: 'json' }
-// //* app.js is mainly for applying middleware
-// if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
 
 const clientUrl = <string>config.get('client.url')
 

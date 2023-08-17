@@ -7,7 +7,7 @@ networks:
   db:
     driver: bridge
   redis_userservice:
-    driver : bridge
+    driver: bridge
   ufront:
     driver: bridge
   gfront:
@@ -46,6 +46,8 @@ services:
       - usermongo
     volumes:
       - .:/src
+    ports:
+      - '3000:8080'
     command: npm start
     environment:
       NODE_ENV: production
@@ -64,12 +66,10 @@ services:
       - gamemongo
     volumes:
       - .:/src
+    ports:
+      - '3001:8080'
     command: npm start
     environment:
-      DATABASE: mongodb://gs_admin:<PASSWORD>@gamemongo:27017/gameservice
-      PORT: 8080
-      DATABASE_USERNAME: gs_admin
-      DATABASE_PASSWORD: root
       NODE_ENV: production
       NODE_CONFIG_DIR: ./src/config/
     networks:
@@ -91,7 +91,6 @@ services:
       - user_mongodb_configdata:/data/configdb
       - ./mongo-init-users.js:/docker-entrypoint-initdb.d/mongo-init-users.js:ro
 
-
   gamemongo:
     container_name: gamemongo
     image: mongo:latest
@@ -106,7 +105,6 @@ services:
       - game_mongodb_data:/data/db
       - game_mongodb_configdata:/data/configdb
       - ./mongo-init-games.js:/docker-entrypoint-initdb.d/mongo-init-games.js:ro
-
 
   usermongo-express:
     container_name: usermongo-express
