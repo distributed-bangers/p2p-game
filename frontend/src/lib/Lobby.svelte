@@ -47,7 +47,7 @@
       const response = await joinGame(selectedGame._id);
       showLoadingSpinner = false;
       $userState.game = response.data.game;
-      $userState.isInGame = true;
+      $userState.isInGameLobby = true;
     } catch (error) {
       alert(error.message);
       showLoadingSpinner = false;
@@ -63,7 +63,7 @@
       const response = await createGame(gameName);
       const newGame = response.data.game;
       $userState.game = newGame;
-      $userState.isInGame = true;
+      $userState.isInGameLobby = true;
       showLoadingSpinner = false;
     } catch (error) {
       alert(error.message);

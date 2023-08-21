@@ -11,6 +11,7 @@ interface IUser {
   username: string;
   authenticated: boolean;
   game: Game;
+  isInGameLobby: boolean;
   isInGame: boolean;
 }
 const user = writable<IUser>({
@@ -18,6 +19,7 @@ const user = writable<IUser>({
   username: payload ? payload.username : null,
   authenticated: !!payload,
   game: null,
+  isInGameLobby: false,
   isInGame: false,
 });
 

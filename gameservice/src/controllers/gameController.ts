@@ -114,7 +114,6 @@ export async function postGameStart(req: Request, res: Response) {
     try {
         //* use socket-connection to send all userIds to all players, except for their own
         //* End Socket-Connection as soon as game starts? If yes, how to know if a client is not reachable?
-        //* If we wire up all clients with a full mesh, then a client might even be able to return and I wouldn't have to check for heartbeats
 
         const gameToStart = await startGame(req)
 

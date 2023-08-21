@@ -51,9 +51,8 @@ io.on('connection', (socket) => {
     })
 
     //* start is send by the host: all other players get the information of all players
-    socket.on(socketio.startGame, () => {
-        console.log('SOCKETIO-START', player)
-        socket.to(gameId).emit(socketio.startGame, player)
+    socket.on(socketio.startGame, (playerIds: String[]) => {
+        socket.to(gameId).emit(socketio.startGame, playerIds)
     })
 
     //* only host sends this: disconnects all members of a group

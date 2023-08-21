@@ -150,3 +150,36 @@ export async function deleteGame(gameId: string): Promise<ResponseGame> {
     throw error;
   }
 }
+
+export async function startGame(gameId: string): Promise<ResponseGame> {
+  try {
+    let authorizationHeader = bearer + get(jwt);
+
+    const response = await fetch(`${gameAPI}/${gameId}/start`, {
+      method: 'PUT',
+      mode: 'cors',
+      headers: {
+        Authorization: authorizationHeader,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const result: ResponseGame = await response.json();
+    if (result.status != jrestStatus.success) {
+      if (result.message) throw new Error(result.message);
+      else throw new Error(errorMessages.serverError);
+    }
+
+    const playerIds = result.data.game.players.map((u) => u.userid);
+
+    socketService.startGame(
+      result.data.game._id,
+      result.data.game.host,
+      playerIds,
+    );
+
+    return result;
+  } catch (error) {
+    throw error;
+  }
+}

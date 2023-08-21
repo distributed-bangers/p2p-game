@@ -1,12 +1,34 @@
 <script>
   import { get } from 'svelte/store';
   import userState from '../../state/user';
-  import { deleteGame, leaveGame } from '../services/gameService';
+  import { deleteGame, leaveGame, startGame } from '../services/gameService';
+    import Game from './Game.svelte';
 
   let showLoadingSpinner = false;
 
   const onClickStartGame = async () => {
-    //! This is the HOOK for starting the game!
+    try {
+      let game;
+      showLoadingSpinner = true;
+      if (amIHost()) {
+        game = await startGame($userState.game._id);
+        console.log('HOST RECEIVED',game.data.game.players);
+            //! TODO: start game hook for host
+          }
+      else throw new Error('Only the host can start the game!');
+
+      showLoadingSpinner = false;
+      //* Updates game in userState, in case there have been any changes; host holds most recent game
+      $userState.game = game.data.game;
+      $userState.isInGameLobby = false;
+      $userState.isInGame = true;
+    } catch (error) {
+      alert(error.message);
+      showLoadingSpinner = false;
+    }
+
+    //! 1. host calls startgame api and receives game back
+    //! 2. host emits startgame event via socketio to all players, shares data of all players (synchronizes all players)
   };
 
   const onClickLeaveGame = async () => {
@@ -18,11 +40,11 @@
       else await leaveGame($userState.game._id);
 
       showLoadingSpinner = false;
-      $userState.isInGame = false;
+      $userState.isInGameLobby = false;
     } catch (error) {
       alert(error.message);
       showLoadingSpinner = false;
-      $userState.isInGame = false;
+      $userState.isInGameLobby = false;
     }
   };
 
