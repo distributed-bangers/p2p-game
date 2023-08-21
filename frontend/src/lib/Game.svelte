@@ -14,10 +14,17 @@
     const otherPlayerIds = playerIds.filter(p => p !== clientId);
     const gameClient = await GameClient.initialize(clientId);
     await gameClient.startGame($userState.game._id, otherPlayerIds);
-    console.log('after start game');
+    console.log('other players', otherPlayerIds.length);
     gameClient.renderer.initialize(canvas, canvas.clientWidth, canvas.clientHeight);
   });
 
 </script>
 
-<canvas id="canvas"></canvas>
+  <canvas id="canvas"></canvas>
+
+<style>
+#canvas {
+    width: 100vw;
+    height: 100vh;
+  }
+</style>
