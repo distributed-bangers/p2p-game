@@ -1,13 +1,9 @@
-import * as THREE from 'three'
-import * as Physics from './physics'
 import PeerClient from './peerClient'
 import { DataConnection } from 'peerjs'
+import Renderer from './renderer'
+import { Bullet, Player } from './game/objects'
+import { isSceneSnapshot, SceneSnapshot } from './game/snapshots'
 
-let showHelpers = false
-
-function isSceneSnapshot(any: any): any is SceneSnapshot {
-    return typeof any === 'object' && any !== null && (any as SceneSnapshot).player !== undefined && (any as SceneSnapshot).bullets !== undefined
-}
 
 interface GameState {
     [playerId: string]: Player
@@ -18,7 +14,7 @@ interface Peer {
     id: string
 }
 
-interface Inputs {
+export interface Inputs {
     moveDown: boolean
     moveLeft: boolean
     moveRight: boolean
@@ -26,32 +22,15 @@ interface Inputs {
     shoot: boolean
 }
 
-interface SceneSnapshot {
-    bullets: Snapshot[]
-    player: Snapshot
-}
-
-interface Snapshot {
-    x: number
-    z: number
-    y: number
-    w: number
-}
-
-class GameClient {
+export class GameClient {
     private readonly id: string
 
     private peerClient: PeerClient
     private peers: Peer[] = []
 
+    renderer: Renderer = new Renderer(this)
+
     gameId: string = ''
-    inputs: Inputs = {
-        moveDown: false,
-        moveLeft: false,
-        moveRight: false,
-        moveUp: false,
-        shoot: false,
-    }
     player: Player = new Player('blue')
     state: GameState = {}
 
@@ -63,18 +42,16 @@ class GameClient {
 
         this.id = peerClient.id
         this.state[this.id] = this.player
-        scene.add(this.player)
+        this.renderer.addPlayer(this.player)
+
+        document.addEventListener('keydown', ev => this.onKeyDown(ev, this))
+        document.addEventListener('keyup', ev => this.onKeyUp(ev, this))
     }
 
-    async startGame( gameId: string, users: string[]) {
+    async startGame(gameId: string, users: string[]) {
         this.gameId = gameId
-        const connectAll: Promise<void>[] = []
 
-        for (const user of users) {
-            connectAll.push(this.connect(user))
-        }
-
-        return Promise.all(connectAll)
+        return Promise.all(users.map(this.connect))
     }
 
     onGameFinished(callBack: (highscore: number) => any) {
@@ -93,7 +70,7 @@ class GameClient {
 
         const player = new Player('red')
         this.state[peer.id] = player
-        scene.add(player)
+        this.renderer.addPlayer(player)
 
         dataConnection.on('data', (data) => {
             if (isSceneSnapshot(data)) {
@@ -104,7 +81,7 @@ class GameClient {
                     if (player.bullets.length < data.bullets.length) {
                         player.spawnBullet()
                     } else {
-                        scene.remove(player.bullets.pop() as Bullet)
+                        this.renderer.scene.remove(player.bullets.pop() as Bullet)
                     }
                 }
 
@@ -112,6 +89,58 @@ class GameClient {
             }
         })
 
+    }
+
+    private onKeyDown(event: KeyboardEvent, client: GameClient) {
+        const inputs = client.player.inputs
+
+        switch (event.code) {
+            case 'ArrowUp':
+            case 'KeyW':
+                inputs.moveUp = true
+                break
+            case 'ArrowLeft':
+            case 'KeyA':
+                inputs.moveLeft = true
+                break
+            case 'ArrowDown':
+            case 'KeyS':
+                inputs.moveDown = true
+                break
+            case 'ArrowRight':
+            case 'KeyD':
+                inputs.moveRight = true
+                break
+            case 'Space':
+                inputs.shoot = true
+                break
+        }
+    }
+
+    private onKeyUp(event: KeyboardEvent, client: GameClient) {
+        const inputs = client.player.inputs
+
+        switch (event.code) {
+            case 'ArrowUp':
+            case 'KeyW':
+                inputs.moveUp = false
+                break
+            case 'ArrowLeft':
+            case 'KeyA':
+                inputs.moveLeft = false
+                break
+            case 'ArrowDown':
+            case 'KeyS':
+                inputs.moveDown = false
+                break
+            case 'ArrowRight':
+            case 'KeyD':
+                inputs.moveRight = false
+                break
+            case 'Space':
+                inputs.shoot = false
+                break
+        }
     }
 
     async connect(id: string) {
@@ -132,231 +161,3 @@ class GameClient {
     }
 }
 
-abstract class PhysicsObject extends Physics.CollidableMesh implements Physics.Updatable, Physics.Snapshotable<Snapshot> {
-    getSnapshot(): Snapshot {
-        return { x: this.position.x, z: this.position.z, y: this.quaternion.y, w: this.quaternion.w }
-    }
-
-    setFromSnapshot(snapshot: Snapshot) {
-        this.position.set(snapshot.x, this.position.y, snapshot.z)
-        this.setRotationFromQuaternion(new THREE.Quaternion(0, snapshot.y, 0, snapshot.w))
-    }
-}
-
-class Player extends PhysicsObject {
-    bullets: Bullet[] = []
-    gun: Gun
-    shootCooldown = 0
-    onCollision = () => this.material = new THREE.MeshBasicMaterial({ color: 'green' })
-
-    constructor(color: THREE.ColorRepresentation) {
-        const playerGeometry = new THREE.CapsuleGeometry(1, 1, 4, 8)
-        const playerMaterial = new THREE.MeshBasicMaterial({ color: color })
-        super(playerGeometry, playerMaterial)
-        this.position.y = 1.5
-
-        this.gun = new Gun()
-        this.add(this.gun)
-
-        this.gun.translateZ(1)
-        this.gun.translateY(0.7)
-        this.gun.rotateX(THREE.MathUtils.degToRad(90))
-    }
-
-    spawnBullet() {
-        const bullet = new Bullet()
-
-        this.gun.getWorldPosition(bullet.position)
-        this.getWorldQuaternion(bullet.quaternion)
-
-        scene.add(bullet)
-        this.bullets.push(bullet)
-
-        if (showHelpers) {
-            const direction = new THREE.Vector3
-            bullet.getWorldDirection(direction)
-
-            const arrowHelper = new THREE.ArrowHelper(direction, bullet.position, 100, 'red')
-            scene.add(arrowHelper)
-        }
-    }
-
-    update() {
-        this.updateInputs(gameClient.inputs)
-
-        super.update()
-    }
-
-    updateInputs(inputs: Inputs): void {
-        if (this.shootCooldown > 0) {
-            this.shootCooldown -= 1
-        }
-        if (inputs.moveUp) {
-            this.translateZ(0.15)
-        }
-        if (inputs.moveDown) {
-            this.translateZ(-0.15)
-        }
-        if (inputs.moveLeft) {
-            this.rotateY(0.06)
-        }
-        if (inputs.moveRight) {
-            this.rotateY(-0.06)
-        }
-        if (inputs.shoot && this.shootCooldown === 0) {
-            this.spawnBullet()
-            this.shootCooldown = 60
-        }
-    }
-}
-
-class Gun extends THREE.Mesh {
-    constructor() {
-        const gunGeometry = new THREE.CylinderGeometry(0.2, 0.2, 1)
-        const gunMaterial = new THREE.MeshBasicMaterial({ color: 'black' })
-
-        super(gunGeometry, gunMaterial)
-    }
-}
-
-class Bullet extends PhysicsObject {
-    constructor() {
-        const bulletGeometry = new THREE.SphereGeometry(0.1)
-        const bulletMaterial = new THREE.MeshBasicMaterial({ color: 'red' })
-
-        super(bulletGeometry, bulletMaterial)
-    }
-}
-
-function createBackground() {
-    const backgroundGeometry = new THREE.PlaneGeometry(100, 100)
-    const backgroundMaterial = new THREE.MeshBasicMaterial()
-    const background = new THREE.Mesh(backgroundGeometry, backgroundMaterial)
-
-    background.rotateX(THREE.MathUtils.degToRad(270))
-
-    scene.add(background)
-}
-
-function createCamera() {
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
-    camera.position.y = 20
-    camera.position.z = 5
-    camera.lookAt(0, 0, 0)
-    return camera
-}
-
-function render() {
-    renderer.render(scene, camera)
-}
-
-function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight
-    camera.updateProjectionMatrix()
-    renderer.setSize(window.innerWidth, window.innerHeight)
-    render()
-}
-
-
-function onKeyDown(event: KeyboardEvent) {
-    const inputs = gameClient.inputs
-
-    switch (event.code) {
-        case 'ArrowUp':
-        case 'KeyW':
-            inputs.moveUp = true
-            break
-        case 'ArrowLeft':
-        case 'KeyA':
-            inputs.moveLeft = true
-            break
-        case 'ArrowDown':
-        case 'KeyS':
-            inputs.moveDown = true
-            break
-        case 'ArrowRight':
-        case 'KeyD':
-            inputs.moveRight = true
-            break
-        case 'Space':
-            inputs.shoot = true
-            break
-    }
-}
-
-function onKeyUp(event: KeyboardEvent) {
-    const inputs = gameClient.inputs
-
-    switch (event.code) {
-        case 'ArrowUp':
-        case 'KeyW':
-            inputs.moveUp = false
-            break
-        case 'ArrowLeft':
-        case 'KeyA':
-            inputs.moveLeft = false
-            break
-        case 'ArrowDown':
-        case 'KeyS':
-            inputs.moveDown = false
-            break
-        case 'ArrowRight':
-        case 'KeyD':
-            inputs.moveRight = false
-            break
-        case 'Space':
-            inputs.shoot = false
-            break
-    }
-}
-
-// Scene
-const scene = new Physics.PhysicsScene()
-
-// Camera
-const camera = createCamera()
-
-// Renderer
-const renderer = new THREE.WebGLRenderer({ antialias: true })
-renderer.setSize(window.innerWidth, window.innerHeight)
-document.body.appendChild(renderer.domElement)
-
-// Controls
-// const controls = new OrbitControls(camera, renderer.domElement)
-
-// Objects
-createBackground()
-
-// Event Listeners
-window.addEventListener('resize', onWindowResize, false)
-
-// Helper
-const axesHelper = new THREE.AxesHelper(200)
-scene.add(axesHelper)
-
-//const stats = new Stats()
-
-let gameClient: GameClient
-GameClient.initialize().then(async client => {
-        gameClient = client
-        document.addEventListener('keydown', onKeyDown)
-        document.addEventListener('keyup', onKeyUp)
-        const otherClient = prompt('other user', '')
-        if (otherClient!.length > 0) {
-            await gameClient.connect(otherClient!)
-            // await gameClient.startGame()
-        }
-
-        animate()
-    },
-)
-
-async function animate() {
-    requestAnimationFrame(animate)
-
-    scene.updatePhysics()
-
-    gameClient.sendSnapshot()
-
-    render()
-}

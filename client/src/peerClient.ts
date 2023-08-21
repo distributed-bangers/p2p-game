@@ -34,7 +34,7 @@ export default class PeerClient extends Peer {
         const dataConnection = this.connect(peerId, options)
         const timeout = 5000
 
-        return new Promise<DataConnection>(resolve => dataConnection.on('open', () => {
+        return new Promise<DataConnection>((resolve, reject) => dataConnection.on('open', () => {
             console.log(`connection to ${peerId} established`)
             this.peers.add(peerId)
 
@@ -53,7 +53,7 @@ export default class PeerClient extends Peer {
 
                 reject(error)
             })
-        })
+        }))
     }
 
     /**
