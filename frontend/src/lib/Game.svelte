@@ -14,7 +14,7 @@
     const otherPlayerIds = playerIds.filter(p => p !== clientId);
     const gameClient = await GameClient.initialize(clientId);
     await gameClient.startGame($userState.game._id, otherPlayerIds);
-    console.log('other players', otherPlayerIds.length);
+    console.log('AFTER START GAME', otherPlayerIds.length);
     gameClient.renderer.initialize(canvas, canvas.clientWidth, canvas.clientHeight);
   });
 

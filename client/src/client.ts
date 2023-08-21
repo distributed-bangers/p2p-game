@@ -50,13 +50,9 @@ export class GameClient {
   async startGame(gameId: string, users: string[]) {
     this.gameId = gameId;
 
-    const promises = [];
-
-    for (let index = 0; index < users.length; index++) {
-      promises.push(this.connect(users[index]).then());
-    }
-
-    return Promise.all(promises);
+    users.forEach(async (element) => {
+      await this.connect(element);
+    });
   }
 
   onGameFinished(callBack: (highscore: number) => any) {}
