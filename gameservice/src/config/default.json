@@ -1,0 +1,12 @@
+{
+    "server": {
+        "port": 3001
+    },
+    "mongo": {
+        "conn_string": "mongodb://gs_admin:root@localhost:27017/gameservice"
+    },
+    "token_secret": "4ecb7c5a013cf78fd10bcc91b8ff73f779b77fa500f03c4485831bcd5c8601af",
+    "client": {
+        "url": "http://localhost:5173"
+    }
+}

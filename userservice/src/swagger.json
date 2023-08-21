@@ -1,0 +1,141 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "version": "1",
+    "title": "UserService",
+    "description": "Documentation"
+  },
+
+  "host": "localhost:3000",
+  "basePath": "/api/v1",
+  "tags": [
+    {
+      "name": "Users",
+      "description": "Endpoints"
+    }
+  ],
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "components": {
+    "schemas": {
+      "AddUser": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "Name of user."
+          },
+          "password": {
+            "type": "string",
+            "description": "Password for this account."
+          }
+        }
+      }
+    },
+    "examples": {
+      "User": {
+        "value": {
+          "username": "Racoosh",
+          "password": "MySecret123!"
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "responses": {
+      "UnauthorisedError": {
+        "description": "Access token is missing or invalid"
+      }
+    }
+  },
+
+  "paths": {
+    "/": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "description": "Endpoint to create new user",
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUser"
+              },
+              "examples": {
+                "User": {
+                  "summary": "examples of user",
+                  "$ref": "#/components/examples/User"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/login": {
+      "post": {
+        "description": "",
+        "requestBody":{
+          "content": {
+            "application/json":{
+              "schema": {
+                "$ref": "#/components/schemas/AddUser"
+              },
+              "examples": {
+                "user": {
+                  "summary": "Example of body",
+                  "$ref":"#/components/examples/User"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          }
+        }
+      }
+    },
+    "/id/": {
+      "get": {
+        "description": "",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    }
+  }
+}

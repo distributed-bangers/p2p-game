@@ -1,0 +1,11 @@
+{
+    "server":{
+        "port": 8080
+    },
+    "mongo":{
+        "conn_string":"mongodb://us_admin:jFRBDfG-lAz8yXA@usermongo:27017/userservice"
+    },
+    "redis": {
+        "conn_string": "redis://userservice:ukQMzEQ8WSJ5hR28WSJ5hR2@redis:3030"
+    }
+}
