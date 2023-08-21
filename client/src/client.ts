@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import * as Physics from './physics'
 import PeerClient from './peerClient'
 import { DataConnection } from 'peerjs'
 
@@ -13,16 +14,21 @@ interface GameState {
 }
 
 interface Peer {
-    id: string
     connection: DataConnection
+    id: string
 }
 
 interface Inputs {
-    moveUp: boolean
     moveDown: boolean
     moveLeft: boolean
     moveRight: boolean
+    moveUp: boolean
     shoot: boolean
+}
+
+interface SceneSnapshot {
+    bullets: Snapshot[]
+    player: Snapshot
 }
 
 interface Snapshot {
@@ -32,14 +38,13 @@ interface Snapshot {
     w: number
 }
 
-interface SceneSnapshot {
-    player: Snapshot
-    bullets: Snapshot[]
-}
-
 class GameClient {
+    private readonly id: string
+
     private peerClient: PeerClient
-    readonly id: string
+    private peers: Peer[] = []
+
+    gameId: string = ''
     inputs: Inputs = {
         moveDown: false,
         moveLeft: false,
@@ -48,7 +53,6 @@ class GameClient {
         shoot: false,
     }
     player: Player = new Player('blue')
-    private peers: Peer[] = []
     state: GameState = {}
 
     private constructor(peerClient: PeerClient) {
@@ -60,6 +64,21 @@ class GameClient {
         this.id = peerClient.id
         this.state[this.id] = this.player
         scene.add(this.player)
+    }
+
+    async startGame( gameId: string, users: string[]) {
+        this.gameId = gameId
+        const connectAll: Promise<void>[] = []
+
+        for (const user of users) {
+            connectAll.push(this.connect(user))
+        }
+
+        return Promise.all(connectAll)
+    }
+
+    onGameFinished(callBack: (highscore: number) => any) {
+
     }
 
     static async initialize(id?: string) {
@@ -96,7 +115,7 @@ class GameClient {
     }
 
     async connect(id: string) {
-        const dataConnection = await this.peerClient.asyncConnect(id)
+        const dataConnection = await this.peerClient.uniqueConnect(id)
 
         this.onConnection(dataConnection)
     }
@@ -113,14 +132,7 @@ class GameClient {
     }
 }
 
-interface Snapshotable {
-    getSnapshot(): Snapshot
-
-    setFromSnapshot(snapshot: Snapshot): void
-}
-
-
-class PhysicsObject extends THREE.Mesh implements Snapshotable {
+abstract class PhysicsObject extends Physics.CollidableMesh implements Physics.Updatable, Physics.Snapshotable<Snapshot> {
     getSnapshot(): Snapshot {
         return { x: this.position.x, z: this.position.z, y: this.quaternion.y, w: this.quaternion.w }
     }
@@ -135,6 +147,7 @@ class Player extends PhysicsObject {
     bullets: Bullet[] = []
     gun: Gun
     shootCooldown = 0
+    onCollision = () => this.material = new THREE.MeshBasicMaterial({ color: 'green' })
 
     constructor(color: THREE.ColorRepresentation) {
         const playerGeometry = new THREE.CapsuleGeometry(1, 1, 4, 8)
@@ -159,7 +172,7 @@ class Player extends PhysicsObject {
         scene.add(bullet)
         this.bullets.push(bullet)
 
-        if(showHelpers) {
+        if (showHelpers) {
             const direction = new THREE.Vector3
             bullet.getWorldDirection(direction)
 
@@ -168,8 +181,13 @@ class Player extends PhysicsObject {
         }
     }
 
+    update() {
+        this.updateInputs(gameClient.inputs)
 
-    update(inputs: Inputs) {
+        super.update()
+    }
+
+    updateInputs(inputs: Inputs): void {
         if (this.shootCooldown > 0) {
             this.shootCooldown -= 1
         }
@@ -293,8 +311,7 @@ function onKeyUp(event: KeyboardEvent) {
 }
 
 // Scene
-const scene = new THREE.Scene()
-const raycaster = new THREE.Raycaster()
+const scene = new Physics.PhysicsScene()
 
 // Camera
 const camera = createCamera()
@@ -337,32 +354,7 @@ GameClient.initialize().then(async client => {
 async function animate() {
     requestAnimationFrame(animate)
 
-    const inputs = gameClient.inputs
-    gameClient.player.update(inputs)
-
-    const enemies: Player[] = []
-
-    for (const peer in gameClient.state) {
-        if (peer !== gameClient.id) {
-            enemies.push(gameClient.state[peer])
-        }
-    }
-
-    for (const bullet of gameClient.player.bullets) {
-        console.log(bullet.quaternion)
-        const direction = new THREE.Vector3()
-        bullet.translateZ(0.5)
-        bullet.getWorldDirection(direction)
-        raycaster.set(bullet.position, direction)
-
-        for (const enemy of enemies) {
-            const collisionResults = raycaster.intersectObject(enemy)
-
-            if (collisionResults.length > 0 && collisionResults[0].distance < 0.5) {
-                enemy.material = new THREE.MeshBasicMaterial({ color: 'green' })
-            }
-        }
-    }
+    scene.updatePhysics()
 
     gameClient.sendSnapshot()
 
