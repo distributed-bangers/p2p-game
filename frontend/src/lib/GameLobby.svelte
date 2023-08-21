@@ -12,8 +12,6 @@
       showLoadingSpinner = true;
       if (amIHost()) {
         game = await startGame($userState.game._id);
-        console.log('HOST RECEIVED',game.data.game.players);
-            //! TODO: start game hook for host
           }
       else throw new Error('Only the host can start the game!');
 

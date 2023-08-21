@@ -64,20 +64,18 @@ export class socketService {
       socketService.resetSocketService();
     });
 
-    socketService.socket.on(
-      socketMessageType.startGame,
-      (playerIds: String[]) => {
-        console.log('CLIENT RECEIVED', playerIds);
-        //! So, this is actually the HOOK every player (except the host) receives on game startup
-        userState.update((u) => {
-          if (u.game) {
-            u.isInGameLobby = false;
-            u.isInGame = true;
-          }
-          return u;
-        });
-      },
-    );
+    socketService.socket.on(socketMessageType.startGame, (players: User[]) => {
+      console.log('CLIENT RECEIVED', players);
+      //! So, this is actually the HOOK every player (except the host) receives on game startup
+      userState.update((u) => {
+        if (u.game) {
+          u.game.players = players;
+          u.isInGameLobby = false;
+          u.isInGame = true;
+        }
+        return u;
+      });
+    });
   }
 
   private static async getInstance(gameName: string, gameHost: User) {
@@ -103,13 +101,9 @@ export class socketService {
     socketService.resetSocketService();
   }
 
-  public static startGame(
-    gameName: string,
-    gameHost: User,
-    playerIds: String[],
-  ) {
+  public static startGame(gameName: string, gameHost: User, players: User[]) {
     if (socketService.instance) socketService.getInstance(gameName, gameHost);
-    socketService.socket.emit(socketMessageType.startGame, playerIds);
+    socketService.socket.emit(socketMessageType.startGame, players);
   }
 
   private static resetSocketService() {

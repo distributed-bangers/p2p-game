@@ -170,12 +170,10 @@ export async function startGame(gameId: string): Promise<ResponseGame> {
       else throw new Error(errorMessages.serverError);
     }
 
-    const playerIds = result.data.game.players.map((u) => u.userid);
-
     socketService.startGame(
       result.data.game._id,
       result.data.game.host,
-      playerIds,
+      result.data.game.players,
     );
 
     return result;

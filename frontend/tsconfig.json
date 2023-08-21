@@ -16,6 +16,12 @@
     "isolatedModules": true,
     "strictNullChecks": false
   },
-  "include": ["src/**/*.d.ts", "src/**/*.ts", "src/**/*.js", "src/**/*.svelte"],
+  "include": [
+    "src/**/*.d.ts",
+    "src/**/*.ts",
+    "src/**/*.js",
+    "src/**/*.svelte",
+    "../client/src/**/*.ts"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
