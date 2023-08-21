@@ -4,19 +4,22 @@ import { DataConnection, Peer, PeerConnectOption } from 'peerjs'
  * Wraps the PeerJS {@link Peer} class for asynchronous use.
  * TODO Define timeout behavior
  */
-class PeerClient extends Peer {
-    private constructor() {
-        super()
+export default class PeerClient extends Peer {
+    readonly peers = new Set<string>()
+
+    private constructor(id = '') {
+        super(id)
     }
 
     /**
      * Initializes the PeerJs {@link Peer} and resolves when a connection to the PeerServer is
      * established.
      */
-    static async initialize(): Promise<PeerClient> {
-        const peerClient = new PeerClient()
+    static async initialize(id?: string): Promise<PeerClient> {
+        const peerClient = new PeerClient(id)
 
         return new Promise(resolve => peerClient.on('open', () => {
+            console.log(`peer id is ${peerClient.id}`)
             resolve(peerClient)
         }))
     }
@@ -31,8 +34,13 @@ class PeerClient extends Peer {
         const dataConnection = this.connect(peerId, options)
         const timeout = 5000
 
-        return new Promise<DataConnection>((resolve, reject) => {
-            setTimeout(reject, timeout)
+        return new Promise<DataConnection>(resolve => dataConnection.on('open', () => {
+            console.log(`connection to ${peerId} established`)
+            this.peers.add(peerId)
+
+            dataConnection.on('close', () => {
+                this.peers.delete(peerId)
+            })
 
             dataConnection.on('open', () => {
                 console.log(`connection to ${peerId} established`)
@@ -45,6 +53,21 @@ class PeerClient extends Peer {
 
                 reject(error)
             })
+        })
+    }
+
+    /**
+     * Only establishes a DataConnection if no other DataConnection to that peer is open.
+     * @param peerId
+     * @param options
+     */
+    async uniqueConnect(peerId: string, options?: PeerConnectOption): Promise<DataConnection> {
+        return new Promise<DataConnection>((resolve, reject) => {
+            if (this.peers.has(peerId)) {
+                reject(`connection to ${peerId} already exists`)
+            }
+
+            resolve(this.asyncConnect(peerId, options))
         })
     }
 
