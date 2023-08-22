@@ -2,6 +2,8 @@ import * as THREE from 'three'
 import * as Physics from '../physics'
 import { Snapshot } from './snapshots'
 import { GameClient, Inputs } from '../client'
+import {color} from "three/examples/jsm/nodes/shadernode/ShaderNodeBaseElements";
+import {Vector3} from "three";
 
 
 abstract class PhysicsObject extends Physics.CollidableMesh implements Physics.Updatable, Physics.Snapshotable<Snapshot> {
@@ -95,4 +97,14 @@ export class Bullet extends PhysicsObject {
 
         super(bulletGeometry, bulletMaterial)
     }
+}
+
+export class RigidObject extends Physics.CollidableMesh{
+    constructor(color: THREE.ColorRepresentation,vertices:THREE.Vector3) {
+        const playerGeometry = new THREE.BoxGeometry(1, 1, 1,)
+        const playerMaterial = new THREE.MeshBasicMaterial({ color: color })
+        super(playerGeometry, playerMaterial)
+        this.position.set(vertices.x,vertices.y,vertices.z)
+    }
+    onCollision = () => this.material = new THREE.MeshBasicMaterial({ color: 'red' })
 }
