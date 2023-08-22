@@ -1,7 +1,8 @@
 import * as Physics from './physics'
 import * as THREE from 'three'
 import { GameClient } from './client'
-import { Player } from './game/objects'
+import {Player, RigidObject} from './game/objects'
+import {CollidableMesh} from "./physics";
 
 function createBackground() {
     const backgroundGeometry = new THREE.PlaneGeometry(100, 100)
@@ -28,13 +29,16 @@ export default class Renderer {
     private gameClient: GameClient
     private renderer: THREE.WebGLRenderer
     scene: Physics.PhysicsScene
+    collidableMeshList: CollidableMesh[]
+
 
     constructor(gameClient: GameClient) {
         this.camera = createCamera()
         this.gameClient = gameClient
-        this.scene = new Physics.PhysicsScene()
         this.renderer = new THREE.WebGLRenderer()
-
+        this.scene = new Physics.PhysicsScene()
+        this.collidableMeshList = []
+        this.scene.loadFloor()
         const background = createBackground()
         this.scene.add(background)
     }
@@ -51,6 +55,10 @@ export default class Renderer {
     addPlayer(player: Player) {
         this.scene.add(player)
     }
+    addCollidableMesh(collidableMesh:RigidObject){
+        this.scene.add(collidableMesh)
+    }
+
 
     animate(time: number) {
         requestAnimationFrame((time) => this.animate(time))
