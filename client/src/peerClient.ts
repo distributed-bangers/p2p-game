@@ -32,28 +32,24 @@ export default class PeerClient extends Peer {
      */
     async asyncConnect(peerId: string, options?: PeerConnectOption): Promise<DataConnection> {
         const dataConnection = this.connect(peerId, options)
-        const timeout = 5000
 
-        return new Promise<DataConnection>((resolve, reject) => dataConnection.on('open', () => {
-            console.log(`connection to ${peerId} established`)
-            this.peers.add(peerId)
-
-            dataConnection.on('close', () => {
-                this.peers.delete(peerId)
-            })
-
+        return new Promise<DataConnection>((resolve, reject) => {
             dataConnection.on('open', () => {
-                console.log(`connection to ${peerId} established`)
+                this.peers.add(peerId)
 
+                dataConnection.on('close', () => {
+                    this.peers.delete(peerId)
+                })
+
+                console.log(`connection to ${peerId} established`)
                 resolve(dataConnection)
             })
-
             dataConnection.on('error', (error) => {
                 console.error(`Connection to ${peerId} failed because of:`, error)
 
                 reject(error)
             })
-        }))
+        })
     }
 
     /**
@@ -62,17 +58,13 @@ export default class PeerClient extends Peer {
      * @param options
      */
     async uniqueConnect(peerId: string, options?: PeerConnectOption): Promise<DataConnection> {
-        return new Promise<DataConnection>((resolve, reject) => {
+        return new Promise<DataConnection>(async (resolve, reject) => {
             if (this.peers.has(peerId)) {
                 reject(`connection to ${peerId} already exists`)
             }
 
             resolve(this.asyncConnect(peerId, options))
         })
-    }
-
-    async joinLobby(lobbyId: string) {
-
     }
 }
 
