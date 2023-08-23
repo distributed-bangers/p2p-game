@@ -20,21 +20,21 @@ volumes:
   redis_data:
 
 services:
-  # frontend:
-  #   container_name: frontend
-  #   build:
-  #     context: ./frontend/
-  #     dockerfile: Dockerfile
-  #   depends_on:
-  #     - gameservice
-  #     - userservice
-  #   volumes:
-  #     - ./default.conf:/etc/nginx/conf.d/default.conf
-  #   ports:
-  #     - '5173:80'
-  #   networks:
-  #     - ufront
-  #     - gfront
+  frontend:
+    container_name: frontend
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    depends_on:
+      - gameservice
+      - userservice
+    volumes:
+      - ./default.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - '5173:80'
+    networks:
+      - ufront
+      - gfront
 
   userservice:
     container_name: userservice

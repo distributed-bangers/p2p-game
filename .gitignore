@@ -1,2 +1,5 @@
 node_modules
 .idea
+client/frontend/.vscode
+frontend/.vscode/extensions.json
+frontend/.vscode
