@@ -4,15 +4,12 @@
   "description": "",
   "scripts": {
     "build": "webpack --config ./src/webpack.prod.js",
-    "dev": "webpack serve --config ./src/webpack.dev.js",
-    "peer": "peerjs --port 8081"
+    "dev": "webpack serve --config ./src/webpack.dev.js"
   },
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^18.11.9",
     "@types/three": "^0.152.0",
-    "peer": "^1.0.0",
-    "three": "^0.152.2",
     "ts-loader": "^9.4.1",
     "typescript": "^5.0.2",
     "webpack": "^5.75.0",
@@ -21,6 +18,7 @@
     "webpack-merge": "^5.8.0"
   },
   "dependencies": {
-    "peerjs": "^1.4.7"
+    "peerjs": "^1.4.7",
+    "three": "^0.152.2"
   }
 }
