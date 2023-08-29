@@ -1,12 +1,11 @@
 import * as THREE from 'three'
 import * as Physics from '../physics'
 import { Snapshot } from './snapshots'
-import { GameClient, Inputs } from '../client'
-import {color} from "three/examples/jsm/nodes/shadernode/ShaderNodeBaseElements";
-import {Vector3} from "three";
+import { Inputs } from '../client'
+import { Updatable } from '../physics'
 
 
-abstract class PhysicsObject extends Physics.CollidableMesh implements Physics.Updatable, Physics.Snapshotable<Snapshot> {
+abstract class PhysicsObject extends Physics.CollidableMesh implements Physics.Snapshotable<Snapshot> {
     getSnapshot(): Snapshot {
         return { x: this.position.x, z: this.position.z, y: this.quaternion.y, w: this.quaternion.w }
     }
@@ -17,13 +16,15 @@ abstract class PhysicsObject extends Physics.CollidableMesh implements Physics.U
     }
 }
 
-export class Player extends PhysicsObject {
+export class Player extends PhysicsObject implements Updatable {
     bullets: Bullet[] = []
     inputs: Inputs = {
         moveDown: false, moveLeft: false, moveRight: false, moveUp: false, shoot: false,
     }
     gun: Gun
     shootCooldown = 0
+    needsUpdate: boolean
+
     onCollision = () => this.material = new THREE.MeshBasicMaterial({ color: 'green' })
 
     constructor(color: THREE.ColorRepresentation) {
@@ -38,6 +39,8 @@ export class Player extends PhysicsObject {
         this.gun.translateZ(1)
         this.gun.translateY(0.7)
         this.gun.rotateX(THREE.MathUtils.degToRad(90))
+
+        this.needsUpdate = true
     }
 
     spawnBullet() {
@@ -52,8 +55,6 @@ export class Player extends PhysicsObject {
 
     update() {
         this.updateInputs()
-
-        super.update()
     }
 
     updateInputs(): void {
@@ -79,6 +80,7 @@ export class Player extends PhysicsObject {
             this.shootCooldown = 60
         }
     }
+
 }
 
 class Gun extends THREE.Mesh {
@@ -99,12 +101,13 @@ export class Bullet extends PhysicsObject {
     }
 }
 
-export class RigidObject extends Physics.CollidableMesh{
-    constructor(color: THREE.ColorRepresentation,vertices:THREE.Vector3) {
-        const playerGeometry = new THREE.BoxGeometry(1, 1, 1,)
+export class RigidObject extends Physics.CollidableMesh {
+    constructor(color: THREE.ColorRepresentation, vertices: THREE.Vector3) {
+        const playerGeometry = new THREE.BoxGeometry(1, 1, 1)
         const playerMaterial = new THREE.MeshBasicMaterial({ color: color })
         super(playerGeometry, playerMaterial)
-        this.position.set(vertices.x,vertices.y,vertices.z)
+        this.position.set(vertices.x, vertices.y, vertices.z)
     }
+
     onCollision = () => this.material = new THREE.MeshBasicMaterial({ color: 'red' })
 }

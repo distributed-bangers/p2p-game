@@ -1,162 +1,174 @@
-import PeerClient from './peerClient';
-import { DataConnection } from 'peerjs';
-import Renderer from './renderer';
-import { Bullet, Player } from './game/objects';
-import { isSceneSnapshot, SceneSnapshot } from './game/snapshots';
+import PeerClient from './peerClient'
+import { DataConnection } from 'peerjs'
+import Renderer from './renderer'
+import { Bullet, Player } from './game/objects'
+import { isSceneSnapshot, SceneSnapshot } from './game/snapshots'
 
 interface GameState {
-  [playerId: string]: Player;
+    [playerId: string]: Player;
 }
 
 interface Peer {
-  connection: DataConnection;
-  id: string;
+    connection: DataConnection;
+    id: string;
 }
 
 export interface Inputs {
-  moveDown: boolean;
-  moveLeft: boolean;
-  moveRight: boolean;
-  moveUp: boolean;
-  shoot: boolean;
+    moveDown: boolean;
+    moveLeft: boolean;
+    moveRight: boolean;
+    moveUp: boolean;
+    shoot: boolean;
 }
 
 export class GameClient {
-  private readonly id: string;
+    private readonly id: string
 
-  private peerClient: PeerClient;
-  private peers: Peer[] = [];
+    private peerClient: PeerClient
+    private peers: Peer[] = []
 
-  renderer: Renderer = new Renderer(this);
+    gameId: string = ''
+    player: Player
+    renderer: Renderer
+    state: GameState = {}
 
-  gameId: string = '';
-  player: Player = new Player('blue');
-  state: GameState = {};
+    private constructor(peerClient: PeerClient) {
+        this.peerClient = peerClient
+        this.peerClient.on('connection', (dataConnection) => {
+            this.onConnection(dataConnection)
+        })
 
-  private constructor(peerClient: PeerClient) {
-    this.peerClient = peerClient;
-    this.peerClient.on('connection', (dataConnection) => {
-      this.onConnection(dataConnection);
-    });
+        this.id = peerClient.id
+        this.player = new Player('blue')
+        this.renderer = new Renderer(this)
 
-    this.id = peerClient.id;
-    this.state[this.id] = this.player;
-    this.renderer.addPlayer(this.player);
+        this.addPlayer(this.id, this.player)
 
-    document.addEventListener('keydown', (ev) => this.onKeyDown(ev, this));
-    document.addEventListener('keyup', (ev) => this.onKeyUp(ev, this));
-  }
+        document.addEventListener('keydown', (ev) => this.onKeyDown(ev, this))
+        document.addEventListener('keyup', (ev) => this.onKeyUp(ev, this))
+        window.addEventListener('resize', () => this.renderer.onResize(window.innerWidth, window.innerHeight))
+    }
 
-  async startGame(gameId: string, users: string[]) {
-    this.gameId = gameId;
+    static async initialize(id?: string) {
+        const peerClient = await PeerClient.initialize(id)
 
-    users.forEach(async (element) => {
-      await this.connect(element);
-    });
-  }
+        return new GameClient(peerClient)
+    }
 
-  onGameFinished(callBack: (highscore: number) => any) {}
+    async startGame(gameId: string, users: string[]) {
+        this.gameId = gameId
 
-  static async initialize(id?: string) {
-    const peerClient = await PeerClient.initialize(id);
+        for (const user of users) {
+            await this.connect(user)
+        }
+    }
 
-    return new GameClient(peerClient);
-  }
+    sendSnapshot() {
+        const snapshot: SceneSnapshot = {
+            bullets: this.player.bullets.map((bullet) => bullet.getSnapshot()),
+            player: this.player.getSnapshot(),
+        }
 
-  private onConnection(dataConnection: DataConnection) {
-    const peer: Peer = { id: dataConnection.peer, connection: dataConnection };
-    this.peers.push(peer);
+        for (const peer of this.peers) {
+            peer.connection.send(snapshot)
+        }
+    }
 
-    const player = new Player('red');
-    this.state[peer.id] = player;
-    this.renderer.addPlayer(player);
+    private async connect(id: string) {
+        const dataConnection = await this.peerClient.uniqueConnect(id)
 
-    dataConnection.on('data', (data) => {
-      if (isSceneSnapshot(data)) {
-        const player = this.state[dataConnection.peer];
-        player.setFromSnapshot(data.player);
+        this.onConnection(dataConnection)
+    }
 
-        while (player.bullets.length !== data.bullets.length) {
-          if (player.bullets.length < data.bullets.length) {
-            player.spawnBullet();
-          } else {
-            this.renderer.scene.remove(player.bullets.pop() as Bullet);
-          }
+    onGameFinished(callBack: (highscore: number) => any) {
+    }
+
+    private onConnection(dataConnection: DataConnection) {
+        const id = dataConnection.peer
+        const peer: Peer = { id: id, connection: dataConnection }
+        this.peers.push(peer)
+
+        const player = new Player('red')
+        this.addPlayer(id, player)
+
+        dataConnection.on('data', (data) => {
+            if (isSceneSnapshot(data)) {
+                this.onSceneSnapshot(id, data)
+            }
+        })
+    }
+
+    private addPlayer(id: string, player: Player) {
+        this.state[id] = player
+        this.renderer.addObject(player)
+    }
+
+    private onSceneSnapshot(id: string, snapshot: SceneSnapshot) {
+        const player = this.state[id]
+        player.setFromSnapshot(snapshot.player)
+
+        while (player.bullets.length !== snapshot.bullets.length) {
+            if (player.bullets.length < snapshot.bullets.length) {
+                player.spawnBullet()
+            } else {
+                this.renderer.scene.remove(player.bullets.pop() as Bullet)
+            }
         }
 
         player.bullets.forEach((bullet, index) =>
-          bullet.setFromSnapshot(data.bullets[index])
-        );
-      }
-    });
-  }
-
-  private onKeyDown(event: KeyboardEvent, client: GameClient) {
-    const inputs = client.player.inputs;
-
-    switch (event.code) {
-      case 'ArrowUp':
-      case 'KeyW':
-        inputs.moveUp = true;
-        break;
-      case 'ArrowLeft':
-      case 'KeyA':
-        inputs.moveLeft = true;
-        break;
-      case 'ArrowDown':
-      case 'KeyS':
-        inputs.moveDown = true;
-        break;
-      case 'ArrowRight':
-      case 'KeyD':
-        inputs.moveRight = true;
-        break;
-      case 'Space':
-        inputs.shoot = true;
-        break;
+            bullet.setFromSnapshot(snapshot.bullets[index]),
+        )
     }
-  }
 
-  private onKeyUp(event: KeyboardEvent, client: GameClient) {
-    const inputs = client.player.inputs;
+    private onKeyDown(event: KeyboardEvent, client: GameClient) {
+        const inputs = client.player.inputs
 
-    switch (event.code) {
-      case 'ArrowUp':
-      case 'KeyW':
-        inputs.moveUp = false;
-        break;
-      case 'ArrowLeft':
-      case 'KeyA':
-        inputs.moveLeft = false;
-        break;
-      case 'ArrowDown':
-      case 'KeyS':
-        inputs.moveDown = false;
-        break;
-      case 'ArrowRight':
-      case 'KeyD':
-        inputs.moveRight = false;
-        break;
-      case 'Space':
-        inputs.shoot = false;
-        break;
+        switch (event.code) {
+            case 'ArrowUp':
+            case 'KeyW':
+                inputs.moveUp = true
+                break
+            case 'ArrowLeft':
+            case 'KeyA':
+                inputs.moveLeft = true
+                break
+            case 'ArrowDown':
+            case 'KeyS':
+                inputs.moveDown = true
+                break
+            case 'ArrowRight':
+            case 'KeyD':
+                inputs.moveRight = true
+                break
+            case 'Space':
+                inputs.shoot = true
+                break
+        }
     }
-  }
 
-  async connect(id: string) {
-    const dataConnection = await this.peerClient.uniqueConnect(id);
+    private onKeyUp(event: KeyboardEvent, client: GameClient) {
+        const inputs = client.player.inputs
 
-    this.onConnection(dataConnection);
-  }
-
-  sendSnapshot() {
-    const snapshot: SceneSnapshot = {
-      bullets: this.player.bullets.map((bullet) => bullet.getSnapshot()),
-      player: this.player.getSnapshot(),
-    };
-
-    for (const peer of this.peers) {
-      peer.connection.send(snapshot);
+        switch (event.code) {
+            case 'ArrowUp':
+            case 'KeyW':
+                inputs.moveUp = false
+                break
+            case 'ArrowLeft':
+            case 'KeyA':
+                inputs.moveLeft = false
+                break
+            case 'ArrowDown':
+            case 'KeyS':
+                inputs.moveDown = false
+                break
+            case 'ArrowRight':
+            case 'KeyD':
+                inputs.moveRight = false
+                break
+            case 'Space':
+                inputs.shoot = false
+                break
+        }
     }
-  }
 }

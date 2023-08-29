@@ -1,55 +1,37 @@
 import * as THREE from 'three'
-import { Updatable } from './updatable'
 
-import { PhysicsScene } from './physicsScene'
-
-export class CollidableMesh<
+export abstract class CollidableMesh<
     TGeometry extends THREE.BufferGeometry = THREE.BufferGeometry,
     TMaterial extends THREE.Material | THREE.Material[] = THREE.Material | THREE.Material[],
-> extends THREE.Mesh<TGeometry, TMaterial> implements Updatable {
+> extends THREE.Mesh<TGeometry, TMaterial> {
     override readonly type: string | 'Collidable'
+
+    readonly isCollidable: true
 
     onCollision?: (collisionTarget: THREE.Object3D) => void
 
-    needsUpdate: true
-
-    rayCaster: THREE.Raycaster = new THREE.Raycaster
+    private boundingVolume: THREE.Box3 = new THREE.Box3()
 
     protected constructor(geometry?: TGeometry, material?: TMaterial) {
         super(geometry, material)
 
         this.type = 'Collidable'
-        this.needsUpdate = true
+        this.isCollidable = true
 
-        this.addEventListener('added', () => this.onAdded())
+        this.boundingVolume.setFromObject(this)
     }
 
-    private onAdded(): void {
-        if ((this.parent as PhysicsScene).isPhysicsScene) {
-            (this.parent as PhysicsScene).collidableMeshes.push(this)
+    updateBoundingVolume(): void {
+        this.boundingVolume.setFromObject(this)
+    }
+
+    checkCollisions(meshes: CollidableMesh[]): void {
+        for (const mesh of meshes.filter(mesh => mesh !== this)) {
+            if (this.onCollision && this.boundingVolume.intersectsBox(mesh.boundingVolume)) this.onCollision(mesh)
         }
     }
+}
 
-    update(): void {
-        this.checkCollision()
-    }
-
-    checkCollision(): void {
-        /*
-        for (let vertexIndex = 0; vertexIndex < this.geometry.attributes.position.array.length; vertexIndex++) {
-            const localVertex = new THREE.Vector3().fromBufferAttribute(this.geometry.attributes.position, vertexIndex).clone()
-            const globalVertex = localVertex.applyMatrix4(this.matrix)
-            const directionVector = globalVertex.sub(this.position)
-
-            this.rayCaster.set(this.position, directionVector.clone().normalize())
-
-            const collisionResults = this.rayCaster.intersectObjects((this.parent as PhysicsScene).collidableMeshes)
-
-            if (collisionResults.length > 0 && collisionResults[0].object.id !== this.id && this.children.every(value => collisionResults[0].object.id !== value.id) && collisionResults[0].distance < directionVector.length()) {
-                if (!this.onCollision) return
-                this.onCollision(collisionResults[0].object)
-            }
-        }
-        */
-    }
+export function isCollidable(any:any) : any is CollidableMesh {
+    return (any as CollidableMesh).isCollidable
 }
