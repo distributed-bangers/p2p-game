@@ -52,6 +52,7 @@ services:
     environment:
       NODE_ENV: production
       NODE_CONFIG_DIR: ./src/config/
+    scale: 2
     networks:
       - userservice
       - redis_userservice
@@ -72,6 +73,7 @@ services:
     environment:
       NODE_ENV: production
       NODE_CONFIG_DIR: ./src/config/
+    scale: 2
     networks:
       - gameservice
       - gfront
