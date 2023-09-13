@@ -6,25 +6,19 @@ actor "Player 3" as p3
 
 p1 -[#blue]> gs: HTTP Request POST /api/v1/games
 activate gs
-alt successful creation
 gs --[#blue]> p1: HTTP 200 Response with gameID
 deactivate gs
-
 p1 -[#green]> gs: socket.io createSocket(playerID_1)
 activate gs
 gs --[#green]> p1: socket.io return Socket
 deactivate gs
 p1 -[#green]> gs: socket.io joinGame(playerID_1).to(gameID)  
-else failed creation
-gs --[#blue]> p1: HTTP 400 Response with error message
-end
 p2 -[#blue]> gs: HTTP Request GET /api/v1/games
 activate gs
 gs --[#blue]> p2: HTTP 200 Response with all gameIDs
 deactivate gs
 p2 -[#blue]> gs: HTTP Request PUT /api/v1/games/{gameID}/join
 activate gs
-alt successful join
 gs --[#blue]> p2: HTTP 200 Response with gameID
 deactivate gs
 p2 -[#green]> gs: socket.io createSocket(playerID_2)
@@ -35,9 +29,20 @@ p2 -[#green]> gs: socket.io joinGame(playerID_2).to(gameID)
 activate gs
 gs -[#green]> p1: socket.io playerJoined(playerID_2).to(gameID)
 deactivate gs
-else failed join
-gs --[#blue]> p2: HTTP 400 Response with error message
-end
+p2 -[#green]> gs: socket.io leaveGame(playerID_2).to(gameID)
+activate gs
+p2 -> p2: reset Socket
+gs -[#green]> p1: socket.io playerLeft(playerID_2).to(gameID)
+deactivate gs
+
+p2 -[#green]> gs: socket.io createSocket(playerID_2)
+activate gs
+gs --[#green]> p2: socket.io returnSocket
+deactivate gs
+p2 -[#green]> gs: socket.io joinGame(playerID_2).to(gameID)
+activate gs
+gs -[#green]> p1: socket.io playerJoined(playerID_2).to(gameID)
+deactivate gs
 p3 -[#blue]> gs: HTTP Request GET /api/v1/games
 activate gs
 gs --[#blue]> p3: HTTP 200 Response with all gameIDs
