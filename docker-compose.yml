@@ -12,6 +12,8 @@ networks:
     driver: bridge
   gfront:
     driver: bridge
+  peerserver:
+    driver: bridge
 volumes:
   user_mongodb_data:
   user_mongodb_configdata:
@@ -35,9 +37,9 @@ services:
     networks:
       - ufront
       - gfront
+      - peerserver
 
   userservice:
-    container_name: userservice
     build:
       context: ./userservice/
       dockerfile: Dockerfile
@@ -58,7 +60,6 @@ services:
       - ufront
 
   gameservice:
-    container_name: gameservice
     build:
       context: ./gameservice/
       dockerfile: Dockerfile
@@ -137,6 +138,8 @@ services:
     image: peerjs/peerjs-server:latest
     ports:
       - '9000:9000'
+    networks:
+      - peerserver
 
   redis:
     container_name: redis

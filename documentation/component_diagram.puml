@@ -1,0 +1,43 @@
+@startuml component
+skinparam linetype ortho
+
+[      NGINX       ] as rp
+[userservice] as us 
+[gameservice] as gs
+[peerJSserver] as ps
+database "user-\nMongoDB" as udb
+database "game-\nMongoDB" as gdb
+database "redis" as redis
+actor "Client" as c1
+
+c1 <--- rp: Responses
+rp <--- c1: Requests\n\n\n\n\n\n\n
+
+gs <---> rp: HTTP: /api/v1/games\nWebsocket: /socketio/v1\n
+us <---> rp: HTTP: /api/v1/users\n\n\n\n
+ps <---> rp: HTTP & Websocket:\n/peerserver\n\n\n\n
+udb <-- us
+redis <-- us
+gdb <-- gs
+
+rp --> rp: HTTP: /\n\n\n\n\n\n
+
+
+note bottom of rp
+    Acts as both a reverse proxy
+    and a webserver to serve
+    the webapp
+end note
+
+
+
+' note left of us
+'     Handles authentication
+' end note
+' note right of gs
+'     Handles lobby logic
+' end note
+' note top of ps
+'     Handles p2p-connections
+' end note
+@enduml
