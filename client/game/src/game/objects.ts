@@ -3,7 +3,10 @@ import * as Physics from '../physics'
 import { Snapshot } from './snapshots'
 import { Inputs } from '../client'
 import { Updatable } from '../physics'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { AnimationMixer } from 'three'
 
+const loader = new GLTFLoader()
 
 abstract class PhysicsObject extends Physics.CollidableMesh implements Physics.Snapshotable<Snapshot> {
     getSnapshot(): Snapshot {
@@ -17,36 +20,60 @@ abstract class PhysicsObject extends Physics.CollidableMesh implements Physics.S
 }
 
 export class Player extends PhysicsObject implements Updatable {
+    private actions = {}
+    private clock = new THREE.Clock
+    private mixer: AnimationMixer
     bullets: Bullet[] = []
     inputs: Inputs = {
         moveDown: false, moveLeft: false, moveRight: false, moveUp: false, shoot: false,
     }
-    gun: Gun
     shootCooldown = 0
     needsUpdate: boolean
 
     onCollision = () => this.material = new THREE.MeshBasicMaterial({ color: 'green' })
 
     constructor(color: THREE.ColorRepresentation) {
+        super()
+        loader.load('racoon.glb',
+            (gltf) => {
+                this.add(gltf.scene)
+                this.animations = gltf.animations
+
+            },
+            // called while loading is progressing
+            function(xhr) {
+
+                console.log((xhr.loaded / xhr.total * 100) + '% loaded')
+
+            },
+            // called when loading has errors
+            function(error) {
+
+                console.log('An error happened')
+
+            })
+
+        this.mixer = new AnimationMixer(this)
+        /*
         const playerGeometry = new THREE.CapsuleGeometry(1, 1, 4, 8)
         const playerMaterial = new THREE.MeshBasicMaterial({ color: color })
         super(playerGeometry, playerMaterial)
-        this.position.y = 1.5
-
-        this.gun = new Gun()
-        this.add(this.gun)
-
-        this.gun.translateZ(1)
-        this.gun.translateY(0.7)
-        this.gun.rotateX(THREE.MathUtils.degToRad(90))
+        this.position.y = 1.5*/
 
         this.needsUpdate = true
     }
 
     spawnBullet() {
+        const action = this.mixer.clipAction(this.animations[0])
+        action.clampWhenFinished = true
+        action.loop = THREE.LoopOnce
+        action.reset()
+            .setEffectiveTimeScale(1)
+            .setEffectiveWeight(2)
+            .fadeIn(1).play()
         const bullet = new Bullet()
 
-        this.gun.getWorldPosition(bullet.position)
+        this.getWorldPosition(bullet.position)
         this.getWorldQuaternion(bullet.quaternion)
 
         this.parent!.add(bullet)
@@ -54,6 +81,7 @@ export class Player extends PhysicsObject implements Updatable {
     }
 
     update() {
+        this.mixer.update(this.clock.getDelta())
         this.updateInputs()
     }
 
@@ -92,13 +120,20 @@ class Gun extends THREE.Mesh {
     }
 }
 
-export class Bullet extends PhysicsObject {
+export class Bullet extends PhysicsObject implements Updatable{
+    needsUpdate: boolean = true
+
     constructor() {
         const bulletGeometry = new THREE.SphereGeometry(0.1)
         const bulletMaterial = new THREE.MeshBasicMaterial({ color: 'red' })
 
         super(bulletGeometry, bulletMaterial)
     }
+
+    update() {
+        this.translateZ(0.1)
+    }
+
 }
 
 export class RigidObject extends Physics.CollidableMesh {

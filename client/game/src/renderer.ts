@@ -15,11 +15,15 @@ function createBackground() {
 function createCamera() {
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
 
-    camera.position.y = 20
-    camera.position.z = 5
+    camera.position.y = 10
+    camera.position.z = 3
     camera.lookAt(0, 0, 0)
 
     return camera
+}
+
+function createLights() {
+
 }
 
 export default class Renderer {
@@ -51,6 +55,9 @@ export default class Renderer {
         this.camera.aspect = width / height
 
         this.animate(0)
+        const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x8d8d8d, 3 );
+        hemiLight.position.set( 0, 20, 0 );
+        this.scene.add( hemiLight );
     }
 
     onResize(width: number, height: number) {
@@ -65,7 +72,6 @@ export default class Renderer {
     }
 
     animate(time: number) {
-        requestAnimationFrame((time) => this.animate(time))
         this.scene.update()
         this.gameClient.sendSnapshot()
 
@@ -75,6 +81,7 @@ export default class Renderer {
         this.camera.position.z = this.gameClient.player.position.z + 5
         */
 
+        requestAnimationFrame((time) => this.animate(time))
         this.render()
     }
 
