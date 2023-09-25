@@ -1,22 +1,23 @@
-import { DataConnection, Peer, PeerConnectOption } from 'peerjs'
+import { DataConnection, Peer, PeerConnectOption} from 'peerjs'
 
-/**
+/*
  * Wraps the PeerJS {@link Peer} class for asynchronous use.
  * TODO Define timeout behavior
  */
 export default class PeerClient extends Peer {
     readonly peers = new Set<string>()
 
-    private constructor(id = '') {
-        super(id)
+    private constructor(id = '', options = {host: 'localhost', port: 5173, path: '/peerserver'}) {
+        super(id, options)
     }
 
-    /**
+    /*
      * Initializes the PeerJs {@link Peer} and resolves when a connection to the PeerServer is
      * established.
      */
-    static async initialize(id?: string): Promise<PeerClient> {
-        const peerClient = new PeerClient(id)
+    static async initialize(id?: string, options?: {host: string, port: number, path: string}): Promise<PeerClient> {
+        console.log('options', options)
+        const peerClient = new PeerClient(id, options)
 
         return new Promise(resolve => peerClient.on('open', () => {
             console.log(`peer id is ${peerClient.id}`)
@@ -31,6 +32,7 @@ export default class PeerClient extends Peer {
      * @param options for specifying details about Peer Connection
      */
     async asyncConnect(peerId: string, options?: PeerConnectOption): Promise<DataConnection> {
+        
         const dataConnection = this.connect(peerId, options)
 
         return new Promise<DataConnection>((resolve, reject) => {

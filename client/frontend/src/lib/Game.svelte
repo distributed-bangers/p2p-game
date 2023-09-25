@@ -3,7 +3,12 @@
   import { onMount } from 'svelte';
   import {GameClient} from '../../../game/src/client';
   import userState from '../../state/user';
-    import { get } from 'svelte/store';
+  import { get } from 'svelte/store';
+  
+
+  const peerserverHost = import.meta.env.VITE_PEER_SERVER_HOST;
+  const peerserverPort = import.meta.env.VITE_PEER_SERVER_PORT;
+  const peerserverPath = import.meta.env.VITE_PEER_SERVER_PATH;
 
   onMount(async () => {
     let playerIds = [];
@@ -11,8 +16,14 @@
     console.log('PLAYERS RECEIVED', playerIds);
     const canvas  = document.getElementById('canvas') as HTMLCanvasElement;
     const clientId =get(userState).userid;
+    console.log('myPlayer: ', clientId)
     const otherPlayerIds = playerIds.filter(p => p !== clientId);
-    const gameClient = await GameClient.initialize(clientId);
+    console.log('otherPlayers: ', otherPlayerIds)
+    const gameClient = await GameClient.initialize(clientId, {
+      host: peerserverHost,
+      port: peerserverPort,
+      path: peerserverPath,
+    });
     await gameClient.startGame($userState.game._id, otherPlayerIds);
     console.log('AFTER START GAME', otherPlayerIds.length);
     gameClient.renderer.initialize(canvas, canvas.clientWidth, canvas.clientHeight);

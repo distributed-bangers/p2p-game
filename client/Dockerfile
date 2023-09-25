@@ -12,9 +12,9 @@ COPY ./frontend .
 RUN npm ci
 RUN npm run build
 
-
 FROM nginx:stable-alpine as production-stage
 RUN rm -rf /usr/share/nginx/html/*
 COPY --from=build-stage /app/frontend/dist /app
+COPY --from=build-stage /app/game/dist/client/racoon.glb /app
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

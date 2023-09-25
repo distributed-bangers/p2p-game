@@ -49,8 +49,8 @@ export class GameClient {
         window.addEventListener('resize', () => this.renderer.onResize(window.innerWidth, window.innerHeight))
     }
 
-    static async initialize(id?: string) {
-        const peerClient = await PeerClient.initialize(id)
+    static async initialize(id?: string, options?: { host: string, port: number, path: string }) {
+        const peerClient = await PeerClient.initialize(id, options)
 
         return new GameClient(peerClient)
     }
