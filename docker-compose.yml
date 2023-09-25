@@ -59,6 +59,8 @@ services:
       - userservice
       - redis_userservice
       - ufront
+    # deploy:
+    #   replicas: 2
 
   gameservice:
     build:
@@ -77,6 +79,8 @@ services:
     networks:
       - gameservice
       - gfront
+    # deploy:
+    #   replicas: 2
 
   usermongo:
     container_name: usermongo
