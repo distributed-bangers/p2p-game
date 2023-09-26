@@ -1,0 +1,15 @@
+Dockerfile
+test.Dockerfile
+.dockerignore
+.gitignore
+README.md
+.idea
+.vscode
+.env.development.local
+.env.development
+.env
+# Artifacts that will be built during image creation.
+# This should contain all files created during `npm run build`.
+build
+node_modules
+dist
