@@ -87,11 +87,11 @@ services:
       - gamemongo
     volumes:
       - .:/src
-    ports:
-      - '3001:8080'
+    # ports:
+    #   - '3001:8080'
     command: npm start
-#    deploy:
-#      replicas: 2
+    deploy:
+     replicas: 2
     environment:
       NODE_ENV: production
       NODE_CONFIG_DIR: ./src/config/
