@@ -16,5 +16,5 @@ FROM nginx:stable-alpine as production-stage
 RUN rm -rf /usr/share/nginx/html/*
 COPY --from=build-stage /app/frontend/dist /app
 COPY --from=build-stage /app/game/dist/client/racoon.glb /app
-EXPOSE 80
+EXPOSE 8080
 CMD ["nginx", "-g", "daemon off;"]
