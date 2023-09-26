@@ -9,11 +9,6 @@ const clientURL = <string>config.get('client.url')
 
 const io = new Server(httpServer, {
     path: '/socketio/v1',
-    cors: {
-        origin: clientURL,
-        optionsSuccessStatus: 200,
-        methods: ['GET', 'POST'],
-    },
 })
 
 io.on('connection', (socket) => {
