@@ -8,6 +8,8 @@ networks:
     driver: bridge
   gamemongo_mongoexpress:
     driver: bridge
+  gameservice_redis:
+    driver: bridge
   userservice_redis:
     driver: bridge
   nginx_userservice:
@@ -85,6 +87,7 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - gamemongo
+      - redissocket
     volumes:
       - .:/src
     # ports:
@@ -98,6 +101,7 @@ services:
     networks:
       - gameservice_gamemongo
       - nginx_gameservice
+      - gameservice_redis
 
   usermongo:
     container_name: usermongo
@@ -179,3 +183,12 @@ services:
     command: redis-server /usr/local/etc/redis/redis.conf
     networks:
       - userservice_redis
+
+  redissocket:
+    container_name: redissocket
+    restart: always
+    expose:
+      - '6379'
+    image: redis:alpine
+    networks:
+      - gameservice_redis
