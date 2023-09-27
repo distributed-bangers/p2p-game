@@ -113,16 +113,18 @@ export async function startGame(req: Request) {
         const game = await getGameById(gameId)
         const host = extractUserFromToken(req)
         if (host) {
-            if (game && !game.started && !game.finished) {
-                if (game.host.userid == host.userid) {
-                    game.started = true
-                    await Game.replaceOne({ _id: game._id }, game)
-                    return game
-                } else throw new Error('This Player is not host of this game.')
-            } else
-                throw new Error(
-                    `Game with id ${gameId} not found or already started/finished`
-                )
+            if (game?.players.length != maxNumberOfPlayers) {
+                if (game && !game.started && !game.finished) {
+                    if (game.host.userid == host.userid) {
+                        game.started = true
+                        await Game.replaceOne({ _id: game._id }, game)
+                        return game
+                    } else throw new Error('This Player is not host of this game.')
+                } else
+                    throw new Error(
+                        `Game with id ${gameId} not found or already started/finished`
+                    )
+            } else throw new Error('Game is not full yet. Wait for more players.')
         } else throw new Error('Token not valid')
     } else throw new Error('No GameId found')
 }

@@ -93,7 +93,7 @@
         <button
           class="button"
           on:click={onClickStartGame}
-          disabled={amIHost() ? false : true}>Start Game</button
+          disabled={(amIHost() && $userState.game.players.length==maxNumberOfPlayers) ? false : true}>Start Game</button
         >
       </div>
     </div>
