@@ -2,25 +2,34 @@
   import { get } from 'svelte/store';
   import userState from '../../state/user';
   import { deleteGame, leaveGame, startGame } from '../services/gameService';
-    import Game from './Game.svelte';
-    import { maxNumberOfPlayers } from '../shared/constants';
+  import Game from './Game.svelte';
+  import { maxNumberOfPlayers } from '../shared/constants';
 
   let showLoadingSpinner = false;
+  let amIHost = false;
+  let gameFull = false;
+
+  $: {
+    amIHost = $userState.game.host.userid === $userState.userid;
+    gameFull = $userState.game.players.length === maxNumberOfPlayers;
+  }
 
   const onClickStartGame = async () => {
     try {
       let game;
       showLoadingSpinner = true;
-      if (amIHost()) {
+      if (amIHost) {
         game = await startGame($userState.game._id);
           }
       else throw new Error('Only the host can start the game!');
 
-      showLoadingSpinner = false;
-      //* Updates game in userState, in case there have been any changes; host holds most recent game
+      //* Overwriting host's gameState, because the startGame endpoint copies players into activePlayers
       $userState.game = game.data.game;
       $userState.isInGameLobby = false;
       $userState.isInGame = true;
+      
+      showLoadingSpinner = false;
+  
     } catch (error) {
       alert(error.message);
       showLoadingSpinner = false;
@@ -35,7 +44,7 @@
       showLoadingSpinner = true;
 
       //* Deletes game and ends all socket-connections if player==host, else only leavesGame
-      if (amIHost()) await deleteGame($userState.game._id);
+      if (amIHost) await deleteGame($userState.game._id);
       else await leaveGame($userState.game._id);
 
       showLoadingSpinner = false;
@@ -46,10 +55,6 @@
       $userState.isInGameLobby = false;
     }
   };
-
-  const amIHost = () => {
-    return $userState.game.host.userid === $userState.userid;
-  };
 </script>
 
 {#if showLoadingSpinner}
@@ -59,8 +64,8 @@
 <div id="rootDiv">
   <h1 id="heading">Welcome to {get(userState).game.name}</h1>
   <h2>
-    {amIHost()
-      ? 'You can start the game at any point!'
+    {amIHost
+      ? 'You can start the game as soon as all players have joined!'
       : 'Waiting for host to start the game...'}
   </h2>
   <div id="cardDiv">
@@ -85,7 +90,10 @@
       </table>
     </div>
     <div>
-      <span>
+      <span
+      class:greenSpan={gameFull}
+      class:redSpan={!gameFull}
+      >
         {$userState.game.players.length}/{maxNumberOfPlayers} players joined
       </span>
       <div id="buttonDiv">
@@ -93,8 +101,9 @@
         <button
           class="button"
           on:click={onClickStartGame}
-          disabled={(amIHost() && $userState.game.players.length==maxNumberOfPlayers) ? false : true}>Start Game</button
-        >
+          class:disabledButton={(!amIHost || !gameFull) ? true : false}
+          disabled={(!amIHost || !gameFull) ? true : false}>Start Game</button
+          >
       </div>
     </div>
   </div>
@@ -111,6 +120,19 @@
     box-shadow:
       rgba(0, 0, 0, 0.05) 0px 6px 24px 0px,
       rgba(0, 0, 0, 0.08) 0px 0px 0px 1px;
+  }
+
+  .disabledButton{
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  .redSpan{
+    color: red;
+  }
+
+  .greenSpan{
+    color: green;
   }
 
   #rootDiv {
