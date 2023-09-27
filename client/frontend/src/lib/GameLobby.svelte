@@ -3,6 +3,7 @@
   import userState from '../../state/user';
   import { deleteGame, leaveGame, startGame } from '../services/gameService';
     import Game from './Game.svelte';
+    import { maxNumberOfPlayers } from '../shared/constants';
 
   let showLoadingSpinner = false;
 
@@ -85,7 +86,7 @@
     </div>
     <div>
       <span>
-        {$userState.game.players.length}/4 players joined
+        {$userState.game.players.length}/{maxNumberOfPlayers} players joined
       </span>
       <div id="buttonDiv">
         <button class="button" on:click={onClickLeaveGame}>Leave Game</button>

@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express'
 import { extractUserFromToken } from './tokenService.js'
 import Game, { IGame, IUser } from '../models/models.js'
+import { maxNumberOfPlayers } from '../constants/constants.js'
 
 //* two query params: ?open=true/false and ?closed=true/false
 //* enter no query params to get all games, either use open=true or closed=true
@@ -46,7 +47,7 @@ export async function joinGame(req: Request) {
         const player = extractUserFromToken(req)
         if (player) {
             if (game && !game.started) {
-                if (game.players.length < 4) {
+                if (game.players.length < maxNumberOfPlayers) {
                     if (!game.players.some((p) => p.userid == player.userid)) {
                         game.players.push(player)
                         await Game.replaceOne({ _id: game._id }, game)

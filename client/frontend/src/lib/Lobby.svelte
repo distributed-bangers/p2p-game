@@ -4,6 +4,7 @@
   import { createGame, getAllGames, joinGame } from '../services/gameService';
   import { onMount, onDestroy } from 'svelte';
   import CreateGameModal from './CreateGameModal.svelte';
+    import { maxNumberOfPlayers } from '../shared/constants';
 
   let selectedGame: Game = null;
   let openGames: Game[] = [];
@@ -100,7 +101,7 @@
               <td>{game.name}</td>
               <td>{game.host.username}</td>
               <td>
-                {game.players.length}/4
+                {game.players.length}/{maxNumberOfPlayers}
               </td>
             </tr>
           {/each}

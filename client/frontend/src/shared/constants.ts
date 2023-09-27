@@ -1,5 +1,7 @@
 export const apiURL = '/api/v1';
 
+export const maxNumberOfPlayers = 3;
+
 export enum jrestStatus {
   success = 'success',
   fail = 'fail',
