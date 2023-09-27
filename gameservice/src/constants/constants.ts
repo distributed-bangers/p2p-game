@@ -4,7 +4,8 @@ export const maxNumberOfPlayers = 3;
 
 export enum socketio {
     join = 'join',
-    leave = 'leave',
+    leaveLobby = 'leaveLobby',
+    leaveGame = 'leaveGame',
     startGame = 'startGame',
     hostLeft = 'hostLeft',
     disconnect = 'disconnect',

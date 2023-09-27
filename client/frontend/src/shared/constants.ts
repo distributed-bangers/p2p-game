@@ -15,7 +15,8 @@ export enum errorMessages {
 
 export enum socketMessageType {
   join = 'join',
-  leave = 'leave',
+  leaveLobby = 'leaveLobby',
+  leaveGame = 'leaveGame',
   startGame = 'startGame',
   hostLeft = 'hostLeft',
   disconnect = 'disconnect',

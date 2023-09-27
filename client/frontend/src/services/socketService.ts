@@ -3,7 +3,6 @@ import { get } from 'svelte/store';
 import userState from '../../state/user';
 import type { User } from '../models/user';
 import { socketMessageType } from '../shared/constants';
-import type { Game } from '../models/game';
 
 export class socketService {
   private static instance: socketService = null;
@@ -37,34 +36,41 @@ export class socketService {
       });
     });
 
-    //! This event only gets called, if a player leaves the game not within the game mechanics, e.g. closing the tab
-    socketService.socket.on(socketMessageType.leave, (data: string) => {
+    //* Other player leaves lobby
+    socketService.socket.on(socketMessageType.leaveLobby, (data: string) => {
       const player: User = JSON.parse(data);
       userState.update((u) => {
-        //* Case: Other players leaves while being in Lobby
-        if (u.game && u.isInGameLobby) {
-          u.game.players = u.game.players.filter(
-            (p) => p.userid != player.userid,
-          );
-          //* Case: Other players leaves while being in Game
-          //* ALSO check if I am the last player! then call win api
-        } else if (u.game && u.isInGame) {
-          u.game.playersInGame = u.game.playersInGame.filter(
-            (p) => p.userid != player.userid,
-          );
-          //* Double check if I am the last player ==> Win-Api is not getting called
-          if (u.game.playersInGame.length == 1)
-            if (u.game.playersInGame[0].userid == u.userid) {
-              alert('All other players have left.. So, you won the game! 🦝');
-              u.game = null;
-              u.isInGame = false;
-              u.isInGameLobby = false;
-            }
-        };
+        u.game.players = u.game.players.filter(
+          (p) => p.userid != player.userid,
+        );
         console.log('after update leave', u);
         return u;
       });
     });
+
+    //* Other player leaves running game
+    socketService.socket.on(socketMessageType.leaveGame, (data: string) => {
+      const player: User = JSON.parse(data);
+      userState.update((u) => {
+
+        u.game.playersInGame = u.game.playersInGame.filter(
+          (p) => p.userid != player.userid,
+        );
+        // gameCient(player.userid);
+        //! HERE; delete player from client
+        //* Double check if I am the last player ==> Win-Api is not getting called
+        if (u.game.playersInGame.length == 1)
+          if (u.game.playersInGame[0].userid == u.userid) {
+            alert('All other players have left.. So, you won the game! 🦝');
+            u.game = null;
+            u.isInGame = false;
+            u.isInGameLobby = false;
+          }
+
+        console.log('after update leave', u);
+        return u;
+      });
+    })
 
     socketService.socket.on(socketMessageType.hostLeft, () => {
       userState.update((u) => {
@@ -104,9 +110,9 @@ export class socketService {
     socketService.socket.emit(socketMessageType.join);
   }
 
-  public static leaveGame(gameName: string, gameHost: User) {
+  public static leaveLobby(gameName: string, gameHost: User) {
     if (socketService.instance) socketService.getInstance(gameName, gameHost);
-    socketService.socket.emit(socketMessageType.leave);
+    socketService.socket.emit(socketMessageType.leaveLobby);
     socketService.resetSocketService();
   }
 

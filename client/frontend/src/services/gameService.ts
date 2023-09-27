@@ -116,7 +116,7 @@ export async function leaveGame(gameId: string): Promise<ResponseGame> {
       else throw new Error(errorMessages.serverError);
     }
 
-    socketService.leaveGame(result.data.game._id, result.data.game.host);
+    socketService.leaveLobby(result.data.game._id, result.data.game.host);
 
     return result;
   } catch (error) {

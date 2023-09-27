@@ -14,7 +14,7 @@ const io = new Server(httpServer, {
     path: '/socketio/v1',
 })
 
-const pubClient = createClient({url: config.get('redis.url')});
+const pubClient = createClient({ url: config.get('redis.url') });
 const subClient = pubClient.duplicate();
 
 Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
@@ -33,9 +33,8 @@ io.on('connection', (socket) => {
         socket.to(gameId).emit(socketio.join, player)
     })
 
-    socket.on(socketio.leave, async () => {
-        console.log('SOCKETIO-LEAVE', player)
-        socket.to(gameId).emit(socketio.leave, player)
+    socket.on(socketio.leaveLobby, async () => {
+        socket.to(gameId).emit(socketio.leaveLobby, player)
         await socket.leave(gameId)
         socket.disconnect()
     })
@@ -54,7 +53,7 @@ io.on('connection', (socket) => {
                         await deleteGameById(gameId);
                         //* Case: Regular player lost connection
                     } else {
-                        socket.to(gameId).emit(socketio.leave, player)
+                        socket.to(gameId).emit(socketio.leaveLobby, player)
                     }
                     //* Handling of Disconnects if game is started and not finished yet
                 } else if (!game?.finished) {
@@ -68,7 +67,7 @@ io.on('connection', (socket) => {
                             game.playersInGame = [];
                         }
                         await replaceGame(game);
-                        socket.to(gameId).emit(socketio.leave, player);
+                        socket.to(gameId).emit(socketio.leaveGame, player);
                         //* Case: User not in the game has lost the connection
                     } else {
                         return;
