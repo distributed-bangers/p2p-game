@@ -4,18 +4,23 @@ import { IUser } from './models/models.js'
 import { socketio } from './constants/constants.js'
 import Game from '../src/models/models.js'
 import config, { get } from 'config'
+import { createClient } from 'redis';
+import { createAdapter } from '@socket.io/redis-adapter';
 import { deleteGameById, getGameById, replaceGame } from './services/gameService.js'
 
 const clientURL = <string>config.get('client.url')
 
 const io = new Server(httpServer, {
     path: '/socketio/v1',
-    cors: {
-        origin: clientURL,
-        optionsSuccessStatus: 200,
-        methods: ['GET', 'POST'],
-    },
 })
+
+const pubClient = createClient({url: config.get('redis.url')});
+const subClient = pubClient.duplicate();
+
+Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
+    console.log('Redis connected')
+    io.adapter(createAdapter(pubClient, subClient));
+});
 
 io.on('connection', (socket) => {
     const player = <string>socket.handshake.headers.player
