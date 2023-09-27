@@ -10,22 +10,23 @@
   const peerserverPort = import.meta.env.VITE_PEER_SERVER_PORT;
   const peerserverPath = import.meta.env.VITE_PEER_SERVER_PATH;
 
+  function getOtherPlayerIds (myId: string) {
+    const playerIds = get(userState).game.players.map(p => p.userid);
+    return playerIds.filter(p => p !== myId);
+  }
+
   onMount(async () => {
-    let playerIds = [];
-    get(userState).game.players.map(p => playerIds.push(p.userid));
-    console.log('PLAYERS RECEIVED', playerIds);
     const canvas  = document.getElementById('canvas') as HTMLCanvasElement;
-    const clientId =get(userState).userid;
-    console.log('myPlayer: ', clientId)
-    const otherPlayerIds = playerIds.filter(p => p !== clientId);
-    console.log('otherPlayers: ', otherPlayerIds)
-    const gameClient = await GameClient.initialize(clientId, {
+    const myId = get(userState).userid;
+    const otherPlayerIds = getOtherPlayerIds(myId);
+
+    const gameClient = await GameClient.initialize(myId, {
       host: peerserverHost,
       port: peerserverPort,
       path: peerserverPath,
     });
+
     await gameClient.startGame($userState.game._id, otherPlayerIds);
-    console.log('AFTER START GAME', otherPlayerIds.length);
     gameClient.renderer.initialize(canvas, canvas.clientWidth, canvas.clientHeight);
   });
 

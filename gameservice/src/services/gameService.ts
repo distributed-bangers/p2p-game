@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express'
 import { extractUserFromToken } from './tokenService.js'
 import Game, { IGame, IUser } from '../models/models.js'
+import { maxNumberOfPlayers } from '../constants/constants.js'
 
 //* two query params: ?open=true/false and ?closed=true/false
 //* enter no query params to get all games, either use open=true or closed=true
@@ -27,6 +28,14 @@ export async function getGameById(id: string) {
     return await Game.findById(id)
 }
 
+export async function deleteGameById(id: string) {
+    return await Game.findByIdAndRemove(id)
+}
+
+export async function replaceGame(game: IGame) {
+    return await Game.replaceOne({ _id: game._id }, game)
+}
+
 export async function createGame(req: Request) {
     if (req.body.name) {
         const host = extractUserFromToken(req)
@@ -46,8 +55,9 @@ export async function joinGame(req: Request) {
         const player = extractUserFromToken(req)
         if (player) {
             if (game && !game.started) {
-                if (game.players.length < 4) {
-                    if (!game.players.some((p) => p.userid == player.userid)) {
+                if (game.players.length < maxNumberOfPlayers) {
+                    //* checks if player is already in game
+                    if (game.players.every((p) => p.userid !== player.userid)) {
                         game.players.push(player)
                         await Game.replaceOne({ _id: game._id }, game)
                         return game
@@ -112,16 +122,20 @@ export async function startGame(req: Request) {
         const game = await getGameById(gameId)
         const host = extractUserFromToken(req)
         if (host) {
-            if (game && !game.started && !game.finished) {
-                if (game.host.userid == host.userid) {
-                    game.started = true
-                    await Game.replaceOne({ _id: game._id }, game)
-                    return game
-                } else throw new Error('This Player is not host of this game.')
-            } else
-                throw new Error(
-                    `Game with id ${gameId} not found or already started/finished`
-                )
+            if (game?.players.length == maxNumberOfPlayers) {
+                if (game && !game.started && !game.finished) {
+                    if (game.host.userid == host.userid) {
+                        //* updates game state in the database (playersInGame, started)
+                        game.playersInGame = game.players
+                        game.started = true
+                        await Game.replaceOne({ _id: game._id }, game)
+                        return game
+                    } else throw new Error('This Player is not host of this game.')
+                } else
+                    throw new Error(
+                        `Game with id ${gameId} not found or already started/finished`
+                    )
+            } else throw new Error('Game is not full yet. Wait for more players.')
         } else throw new Error('Token not valid')
     } else throw new Error('No GameId found')
 }

@@ -6,7 +6,8 @@ export interface Game {
   name: string;
   host: User;
   players: User[];
+  playersInGame?: User[];
+  winner?: User;
   started: boolean;
   finished: boolean;
-  highscore?: number;
 }

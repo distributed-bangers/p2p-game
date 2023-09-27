@@ -5,8 +5,6 @@ import type { User } from '../models/user';
 import { socketMessageType } from '../shared/constants';
 import type { Game } from '../models/game';
 
-console.log('ATTENTION', import.meta.env.VITE_SOCKET_URL!);
-
 export class socketService {
   private static instance: socketService = null;
   private static socket: Socket = null;
@@ -14,8 +12,6 @@ export class socketService {
   private static socketServer = import.meta.env.VITE_SOCKET_URL;
 
   private constructor(gameId: string, gameHost: User) {
-    console.log('SOCKETSERVICE INSTANCE CREATED');
-
     const client = <User>{
       username: get(userState).username,
       userid: get(userState).userid,
@@ -24,6 +20,7 @@ export class socketService {
     if (!socketService.socket) {
       socketService.socket = io(socketService.socketServer, {
         path: import.meta.env.VITE_SOCKET_VERSION,
+        //* when a player connects to the socketService, he sends the gameId, hostId and his own player object
         extraHeaders: {
           gameid: gameId,
           hostid: gameHost.userid,
@@ -40,14 +37,31 @@ export class socketService {
       });
     });
 
+    //! This event only gets called, if a player leaves the game not within the game mechanics, e.g. closing the tab
     socketService.socket.on(socketMessageType.leave, (data: string) => {
-      console.log('LEAVE', data);
       const player: User = JSON.parse(data);
       userState.update((u) => {
-        if (u.game && u.isInGameLobby)
+        //* Case: Other players leaves while being in Lobby
+        if (u.game && u.isInGameLobby) {
           u.game.players = u.game.players.filter(
             (p) => p.userid != player.userid,
           );
+          //* Case: Other players leaves while being in Game
+          //* ALSO check if I am the last player! then call win api
+        } else if (u.game && u.isInGame) {
+          u.game.playersInGame = u.game.playersInGame.filter(
+            (p) => p.userid != player.userid,
+          );
+          //* Double check if I am the last player ==> Win-Api is not getting called
+          if (u.game.playersInGame.length == 1)
+            if (u.game.playersInGame[0].userid == u.userid) {
+              alert('All other players have left.. So, you won the game! 🦝');
+              u.game = null;
+              u.isInGame = false;
+              u.isInGameLobby = false;
+            }
+        };
+        console.log('after update leave', u);
         return u;
       });
     });
@@ -65,11 +79,12 @@ export class socketService {
     });
 
     socketService.socket.on(socketMessageType.startGame, (players: User[]) => {
-      console.log('CLIENT RECEIVED', players);
-      //! So, this is actually the HOOK every player (except the host) receives on game startup
+      //*This is the starting point of the game for the players, not the host (for him it's in GameLobby.svelte)
       userState.update((u) => {
         if (u.game) {
+          //* Syncing the game state (players) with the server
           u.game.players = players;
+          u.game.playersInGame = players;
           u.isInGameLobby = false;
           u.isInGame = true;
         }

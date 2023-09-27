@@ -15,6 +15,7 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "@socket.io/redis-adapter": "^8.2.1",
         "@typegoose/typegoose": "^11.4.0",
         "@types/cors": "^2.8.13",
         "config": "^3.3.9",
@@ -23,6 +24,7 @@
         "jsonwebtoken": "^9.0.1",
         "mongoose": "^7.4.0",
         "nodemon": "^3.0.1",
+        "redis": "^4.6.10",
         "socket.io": "^4.7.1",
         "ts-node": "^10.9.1"
     },
