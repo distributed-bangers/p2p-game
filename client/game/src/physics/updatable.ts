@@ -1,9 +1,13 @@
 export interface Updatable {
-    needsUpdate: boolean
+  needsUpdate: boolean;
 
-    update(): void
+  update(): void;
 }
 
 export function isUpdatable(any: any): any is Updatable {
-    return typeof any === 'object' && any !== null && (any as Updatable).update !== undefined
+  return (
+    typeof any === "object" &&
+    any !== null &&
+    (any as Updatable).update !== undefined
+  );
 }
