@@ -55,9 +55,9 @@ export default class Renderer {
         this.camera.aspect = width / height
 
         this.animate(0)
-        const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x8d8d8d, 3 );
-        hemiLight.position.set( 0, 20, 0 );
-        this.scene.add( hemiLight );
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x8d8d8d, 3)
+        hemiLight.position.set(0, 20, 0)
+        this.scene.add(hemiLight)
     }
 
     onResize(width: number, height: number) {
@@ -69,6 +69,10 @@ export default class Renderer {
 
     addObject(object: THREE.Object3D) {
         this.scene.add(object)
+    }
+
+    removeObject(object: THREE.Object3D) {
+        this.scene.remove(object)
     }
 
     animate(time: number) {

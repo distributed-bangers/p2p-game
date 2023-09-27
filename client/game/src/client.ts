@@ -83,6 +83,18 @@ export class GameClient {
     onGameFinished(callBack: (highscore: number) => any) {
     }
 
+    onPlayerDisconnect(playerId: string) {
+        this.removePlayer(playerId)
+
+        const peer = this.peers.find(({ id }) => id === playerId)
+
+        if (peer) {
+            peer.connection.close()
+
+            this.peers.splice(this.peers.indexOf(peer), 1)
+        }
+    }
+
     private onConnection(dataConnection: DataConnection) {
         const id = dataConnection.peer
         const peer: Peer = { id: id, connection: dataConnection }
@@ -101,6 +113,17 @@ export class GameClient {
     private addPlayer(id: string, player: Player) {
         this.state[id] = player
         this.renderer.addObject(player)
+    }
+
+    private removePlayer(id: string) {
+        const player = this.state[id]
+        delete this.state[id]
+
+        for (const bullet of player.bullets) {
+            this.renderer.removeObject(bullet)
+        }
+
+        this.renderer.removeObject(player)
     }
 
     private onSceneSnapshot(id: string, snapshot: SceneSnapshot) {
