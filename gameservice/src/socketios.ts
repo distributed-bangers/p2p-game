@@ -3,7 +3,8 @@ import { DisconnectReason, Server } from 'socket.io'
 import { IUser } from './models/models.js'
 import { socketio } from './constants/constants.js'
 import Game from '../src/models/models.js'
-import config from 'config'
+import config, { get } from 'config'
+import { deleteGameById, getGameById, replaceGame } from './services/gameService.js'
 
 const clientURL = <string>config.get('client.url')
 
@@ -22,7 +23,6 @@ io.on('connection', (socket) => {
     const hostId = <string>socket.handshake.headers.hostid
 
     //* both join and leave are send by the players (not the host) after calling join/leave endpoint
-    //* client attaches sends his own information after joining/leaving (data)
     socket.on(socketio.join, async () => {
         await socket.join(gameId)
         socket.to(gameId).emit(socketio.join, player)
@@ -36,17 +36,43 @@ io.on('connection', (socket) => {
     })
 
     socket.on(socketio.disconnect, async (reason: DisconnectReason) => {
-        if (reason === 'transport close') {
-            //* This is the reason if the client loses the connection (browser closes, no answer to ping)
-            if (hostId == JSON.parse(player).userid) {
-                //* Case: Host lost connection
-                socket.to(gameId).emit(socketio.hostLeft)
-                cleanUpRoom()
-                await Game.findByIdAndRemove(gameId)
-            } else {
-                //* Case: Player lost connection
-                socket.to(gameId).emit(socketio.leave, player)
+        try {
+            const game = await getGameById(gameId);
+            //* This is called when a user closes the tab
+            if (reason === 'transport close') {
+                //* Handling of Disconnects if game is not started yet
+                if (!game?.started) {
+                    //* Case: Host lost connection
+                    if (hostId == JSON.parse(player).userid) {
+                        socket.to(gameId).emit(socketio.hostLeft)
+                        cleanUpRoom()
+                        await deleteGameById(gameId);
+                        //* Case: Regular player lost connection
+                    } else {
+                        socket.to(gameId).emit(socketio.leave, player)
+                    }
+                    //* Handling of Disconnects if game is started and not finished yet
+                } else if (!game?.finished) {
+                    //* Case: User in game has lost connection
+                    if (game.playersInGame.some((p) => p.userid == JSON.parse(player).userid)) {
+                        game.playersInGame = game.playersInGame.filter((p) => p.userid != JSON.parse(player).userid);
+                        //* Case: User in game has lost connection and the remaining user is the last player
+                        if (game.playersInGame.length == 1) {
+                            game.finished = true;
+                            game.winner = game.playersInGame[0];
+                            game.playersInGame = [];
+                        }
+                        await replaceGame(game);
+                        socket.to(gameId).emit(socketio.leave, player);
+                        //* Case: User not in the game has lost the connection
+                    } else {
+                        return;
+                    }
+
+                }
             }
+        } catch (error) {
+            console.log(error)
         }
     })
 
@@ -56,7 +82,7 @@ io.on('connection', (socket) => {
     })
 
     //* only host sends this: disconnects all members of a group
-    //* should get called if game gets cancelled before starting, breaks during playing or ends successfully
+    //* should get called if game gets cancelled before starting
     socket.on(socketio.hostLeft, () => {
         socket.to(gameId).emit(socketio.hostLeft)
         cleanUpRoom()

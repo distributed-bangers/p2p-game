@@ -28,6 +28,14 @@ export async function getGameById(id: string) {
     return await Game.findById(id)
 }
 
+export async function deleteGameById(id: string) {
+    return await Game.findByIdAndRemove(id)
+}
+
+export async function replaceGame(game: IGame) {
+    return await Game.replaceOne({ _id: game._id }, game)
+}
+
 export async function createGame(req: Request) {
     if (req.body.name) {
         const host = extractUserFromToken(req)
@@ -48,7 +56,8 @@ export async function joinGame(req: Request) {
         if (player) {
             if (game && !game.started) {
                 if (game.players.length < maxNumberOfPlayers) {
-                    if (!game.players.some((p) => p.userid == player.userid)) {
+                    //* checks if player is already in game
+                    if (game.players.every((p) => p.userid !== player.userid)) {
                         game.players.push(player)
                         await Game.replaceOne({ _id: game._id }, game)
                         return game
@@ -113,9 +122,11 @@ export async function startGame(req: Request) {
         const game = await getGameById(gameId)
         const host = extractUserFromToken(req)
         if (host) {
-            if (game?.players.length != maxNumberOfPlayers) {
+            if (game?.players.length == maxNumberOfPlayers) {
                 if (game && !game.started && !game.finished) {
                     if (game.host.userid == host.userid) {
+                        //* updates game state in the database (playersInGame, started)
+                        game.playersInGame = game.players
                         game.started = true
                         await Game.replaceOne({ _id: game._id }, game)
                         return game
