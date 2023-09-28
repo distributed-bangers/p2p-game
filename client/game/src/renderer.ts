@@ -60,6 +60,38 @@ export default class Renderer {
         this.scene.add( hemiLight );
     }
 
+    async loadFloor() {
+        try {
+            let textures = {
+                grass: await new THREE.TextureLoader().loadAsync('grass.png'),
+                grass1: await new THREE.TextureLoader().loadAsync('grass1.png'),
+            }
+            const height:number = 0.1
+            let hexagonGeometries: Array<THREE.CylinderGeometry> = []
+            for (let i = -10; i<= 10;i++ ){
+                for (let j = -10; j<= 10;j++ ){
+                    let geo = new THREE.CylinderGeometry(0.8,0.8,height,6,1,false)
+                    let x = (i + (j%2) * 0.5) *1.40
+                    let y = j *1.235
+                    geo.translate(x,height,y- 5)
+                    hexagonGeometries.push(geo)
+                }
+            }
+            const mergedHexGeometry = BufferGeometryUtils.mergeGeometries(hexagonGeometries)
+            const hexagonMesh = new THREE.Mesh(
+                mergedHexGeometry,
+                new THREE.MeshStandardMaterial({
+                    map: textures.grass1,
+                    color: '#bacfc0',
+                    flatShading: true
+                })
+            )
+            this.scene.add(hexagonMesh)
+
+        } catch (e) {
+            console.log(e)
+        }
+    }
     onResize(width: number, height: number) {
         this.renderer.setSize(width, height)
 
