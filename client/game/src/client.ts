@@ -84,6 +84,8 @@ export class GameClient {
 
   private async connect(id: string) {
     const dataConnection = await this.peerClient.uniqueConnect(id);
+    
+    this.addPlayer(id, new Player("red", id));
 
     this.onConnection(dataConnection);
   }
@@ -107,8 +109,7 @@ export class GameClient {
     const peer: Peer = { id: id, connection: dataConnection };
     this.peers.push(peer);
 
-    const player = new Player("red", id);
-    this.addPlayer(id, player);
+    // const player = ;
 
     dataConnection.on("data", (data) => {
       if (isSceneSnapshot(data)) {
