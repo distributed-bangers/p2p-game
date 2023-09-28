@@ -15,9 +15,10 @@ const bearer = 'Bearer ';
 
 //* gets called from game client, when the player himself dies
 //* all other players are notified via socket-events
-export async function loseGame(gameId: string): Promise<ResponseGame> {
+export async function loseGame(): Promise<ResponseGame> {
     try {
         let authorizationHeader = bearer + get(jwt);
+        const gameId = get(userState).game._id;
 
         const response = await fetch(`${gameAPI}/${gameId}/lose`, {
             method: 'PUT',
