@@ -14,10 +14,12 @@ export enum errorMessages {
 }
 
 export enum socketMessageType {
-  join = 'join',
-  leaveLobby = 'leaveLobby',
-  leaveGame = 'leaveGame',
-  startGame = 'startGame',
-  hostLeft = 'hostLeft',
+  playerJoinsLobby = 'playerJoinsLobby',
+  playerLeavesLobby = 'playerLeavesLobby',
+  playerLeavesGame = 'playerLeavesGame',
+  hostStartsGame = 'hostStartsGame',
+  hostLeavesLobby = 'hostLeavesLobby',
+  playerLosesGame = 'playerLosesGame',
+  playerWinsGame = 'playerWinsGame',
   disconnect = 'disconnect',
 }

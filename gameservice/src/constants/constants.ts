@@ -3,11 +3,13 @@ export const apiURL = '/api/v1'
 export const maxNumberOfPlayers = 3;
 
 export enum socketio {
-    join = 'join',
-    leaveLobby = 'leaveLobby',
-    leaveGame = 'leaveGame',
-    startGame = 'startGame',
-    hostLeft = 'hostLeft',
+    playerJoinsLobby = 'playerJoinsLobby',
+    playerLeavesLobby = 'playerLeavesLobby',
+    playerLeavesGame = 'playerLeavesGame',
+    hostStartsGame = 'hostStartsGame',
+    hostLeavesLobby = 'hostLeavesLobby',
+    playerLosesGame = 'playerLosesGame',
+    playerWinsGame = 'playerWinsGame',
     disconnect = 'disconnect',
 }
 

@@ -140,22 +140,35 @@ export async function startGame(req: Request) {
     } else throw new Error('No GameId found')
 }
 
-export async function finishGame(req: Request) {
+//* called when a player loses the game, winner never calls an endpoint
+export async function loseGame(req: Request) {
     const gameId = req.params.id
     if (gameId) {
         const game = await getGameById(gameId)
-        const host = extractUserFromToken(req)
-        if (host) {
+        const player = extractUserFromToken(req)
+        if (player) {
             if (game && !game.finished && game.started) {
-                if (game.host.userid == host.userid) {
-                    game.finished = true
-                    await Game.replaceOne({ _id: game._id }, game)
+                if (game.playersInGame.some((p) => p.userid == player.userid)) {
+                    game.playersInGame = game.playersInGame.filter((p) => p.userid != player.userid)
+
+                    
+                    //* 1: Notifying that other player lost (socket: playerLost)
+
+                    if (game.playersInGame.length == 1) {
+                        //* 2: Notifying that other player won (socket: playerWon)
+                        game.finished = true
+                        game.winner = game.playersInGame[0];
+                        game.playersInGame = [];
+                    }
+
+                    await replaceGame(game);
                     return game
-                } else throw new Error('This Player is not host of this game.')
+
+                } else throw new Error('This Player is not in this game.')
             } else
                 throw new Error(
                     `Game with id ${gameId} not found or already finished/not started`
                 )
         } else throw new Error('Token not valid')
     } else throw new Error('No GameId found')
-}
+}   

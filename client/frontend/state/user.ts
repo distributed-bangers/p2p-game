@@ -30,7 +30,16 @@ jwt.subscribe(async (value) => {
   try {
     const { userid, username } = await authenticateJWT(value);
     user.update((user) => ({ ...user, userid, username, authenticated: true }));
-  } catch (e) {}
+  } catch (e) { }
 });
+
+export const leaveRunningGame = () => {
+  user.update((u) => {
+    u.game = null;
+    u.isInGame = false;
+    u.isInGameLobby = false;
+    return u;
+  });
+};
 
 export default user;
