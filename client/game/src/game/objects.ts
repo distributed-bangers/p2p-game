@@ -238,7 +238,7 @@ export class Obstacle extends Physics.CollidableMesh {
 }
 export class Stone extends Obstacle{
     constructor() {
-        super(stoneObject);
+        super(stoneObject.clone());
         this.updateBoundingVolume()
 }}
 
@@ -253,6 +253,6 @@ export class Bonus extends Physics.CollidableMesh {
 
 export class Meat extends Bonus{
     constructor() {
-        super(stoneObject);
+        super(stoneObject.clone());
         this.updateBoundingVolume()
     }}
