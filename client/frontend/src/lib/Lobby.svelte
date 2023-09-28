@@ -2,14 +2,16 @@
   import type { Game } from '../models/game';
   import userState from '../../state/user';
   import { createGame, getAllGames, joinGame } from '../services/gameService';
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import CreateGameModal from './CreateGameModal.svelte';
+  import HighscoreModal from './HighscoreModal.svelte';
     import { maxNumberOfPlayers } from '../shared/constants';
 
   let selectedGame: Game = null;
   let openGames: Game[] = [];
   let showLoadingSpinner = false;
   let showCreateGameModal = false;
+  let showHighscoreModal = false;
 
   onMount(async () => {
     //* Resets game if user navigates back to lobby or gets kicked from game by socket-connection
@@ -24,11 +26,6 @@
       showLoadingSpinner = false;
     }
   });
-
-  // onDestroy(() => {
-  //   console.log('DESTROY');
-  //   openGames = [];
-  // });
 
   const onClickRefresh = async () => {
     try {
@@ -54,6 +51,11 @@
       showLoadingSpinner = false;
     }
   };
+
+  const onClickShowHighscore = () => {
+    showHighscoreModal = true;
+  }
+
   const onClickCreate = () => {
     showCreateGameModal = true;
   };
@@ -74,6 +76,7 @@
 </script>
 
 <CreateGameModal bind:showCreateGameModal {onCreateNewGame}></CreateGameModal>
+<HighscoreModal bind:showHighscoreModal></HighscoreModal>
 
 {#if showLoadingSpinner}
   <div id="loading"></div>
@@ -112,6 +115,7 @@
     </div>
     <div id="buttonDiv">
       <button class="button" on:click={onClickRefresh}>Refresh</button>
+      <button class="button" on:click={onClickShowHighscore}>Show Highscore</button>
       <button class="button" disabled={!selectedGame} on:click={onClickJoin}
         >Join Game</button
       >
@@ -154,7 +158,7 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    width: 40em;
+    width: 50em;
     height: 20em;
     background-color: rgb(235, 235, 235);
     box-shadow:
