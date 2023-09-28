@@ -1,6 +1,5 @@
 <script lang="ts">
     import { getAllGames } from "../services/gameService";
-    import type { IHighscore } from "../models/game";
     import { onMount } from 'svelte';
 
 

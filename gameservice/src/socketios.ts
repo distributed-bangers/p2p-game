@@ -78,6 +78,7 @@ io.on('connection', (socket) => {
                             game.finished = true;
                             game.winner = game.playersInGame[0];
                             game.playersInGame = [];
+                            await cleanUpRoom();
                         }
                         await replaceGame(game);
                         await leaveAndCleanUp(socketio.playerLeavesGame);
@@ -112,6 +113,7 @@ io.on('connection', (socket) => {
     //* last losing player sends this when he loses game => cleans up own socket and sends to one remaining player
     socket.on(socketio.playerWinsGame, async () => {
         await leaveAndCleanUp(socketio.playerWinsGame)
+        await cleanUpRoom();
     })
 })
 export default httpServer

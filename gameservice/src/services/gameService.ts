@@ -151,11 +151,7 @@ export async function loseGame(req: Request) {
                 if (game.playersInGame.some((p) => p.userid == player.userid)) {
                     game.playersInGame = game.playersInGame.filter((p) => p.userid != player.userid)
 
-                    
-                    //* 1: Notifying that other player lost (socket: playerLost)
-
                     if (game.playersInGame.length == 1) {
-                        //* 2: Notifying that other player won (socket: playerWon)
                         game.finished = true
                         game.winner = game.playersInGame[0];
                         game.playersInGame = [];

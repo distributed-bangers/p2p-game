@@ -66,6 +66,7 @@ export class socketService {
             u.game = null;
             u.isInGame = false;
             u.isInGameLobby = false;
+            socketService.resetSocketService();
           }
         return u;
       });
@@ -111,6 +112,7 @@ export class socketService {
     socketService.socket.on(socketMessageType.playerWinsGame, () => {
       alert('You won the game! 🦝');
       leaveRunningGame();
+      socketService.resetSocketService();
     });
   }
 
@@ -153,6 +155,7 @@ export class socketService {
   }
 
   private static resetSocketService() {
+    socketService.socket.disconnect();
     socketService.instance = null;
     socketService.socket = null;
   }

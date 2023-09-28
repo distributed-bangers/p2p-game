@@ -39,7 +39,7 @@ export async function loseGame(): Promise<ResponseGame> {
         socketService.loseGame(result.data.game._id, result.data.game.host);
 
         //* Calls the socketService to notify the only remaining player, that he won
-        if (result.data.game.playersInGame.length == 1) {
+        if (result.data.game.finished) {
             socketService.winGame(result.data.game._id, result.data.game.host);
         }
 
