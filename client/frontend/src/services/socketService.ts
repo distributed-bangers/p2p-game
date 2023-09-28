@@ -3,6 +3,7 @@ import { get } from 'svelte/store';
 import userState from '../../state/user';
 import type { User } from '../models/user';
 import { socketMessageType } from '../shared/constants';
+import { gameClient } from '../main';
 
 export class socketService {
   private static instance: socketService = null;
@@ -56,8 +57,8 @@ export class socketService {
         u.game.playersInGame = u.game.playersInGame.filter(
           (p) => p.userid != player.userid,
         );
-        // gameCient(player.userid);
-        //! HERE; delete player from client
+        //* Update the gameClient: Disconnect WebRTC-Connection
+        gameClient.onPlayerDisconnect(player.userid);
         //* Double check if I am the last player ==> Win-Api is not getting called
         if (u.game.playersInGame.length == 1)
           if (u.game.playersInGame[0].userid == u.userid) {

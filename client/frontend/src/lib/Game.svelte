@@ -1,32 +1,28 @@
 <script lang="ts">
   
   import { onMount } from 'svelte';
-  import {GameClient} from '../../../game/src/client';
   import userState from '../../state/user';
   import { get } from 'svelte/store';
-  
-
-  const peerserverHost = import.meta.env.VITE_PEER_SERVER_HOST;
-  const peerserverPort = import.meta.env.VITE_PEER_SERVER_PORT;
-  const peerserverPath = import.meta.env.VITE_PEER_SERVER_PATH;
+  import { gameClient, initializeGameClient } from '../main';
 
   function getOtherPlayerIds (myId: string) {
     const playerIds = get(userState).game.players.map(p => p.userid);
     return playerIds.filter(p => p !== myId);
   }
 
+  //* This is the entry point for starting the game client
   onMount(async () => {
     const canvas  = document.getElementById('canvas') as HTMLCanvasElement;
     const myId = get(userState).userid;
     const otherPlayerIds = getOtherPlayerIds(myId);
 
-    const gameClient = await GameClient.initialize(myId, {
-      host: peerserverHost,
-      port: peerserverPort,
-      path: peerserverPath,
-    });
+    // initializing the game client
+    await initializeGameClient(myId);
 
+    // starting the game
     await gameClient.startGame($userState.game._id, otherPlayerIds);
+
+    // starting the renderer
     gameClient.renderer.initialize(canvas, canvas.clientWidth, canvas.clientHeight);
   });
 
