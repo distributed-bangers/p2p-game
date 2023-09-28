@@ -78,10 +78,10 @@ io.on('connection', (socket) => {
                             game.finished = true;
                             game.winner = game.playersInGame[0];
                             game.playersInGame = [];
-                            await cleanUpRoom();
                         }
                         await replaceGame(game);
                         await leaveAndCleanUp(socketio.playerLeavesGame);
+                        if (game.finished) cleanUpRoom()
                         //* Case: User not in the game has lost the connection
                     } else {
                         return;
