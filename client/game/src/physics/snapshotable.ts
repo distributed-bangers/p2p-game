@@ -1,5 +1,5 @@
 export interface Snapshotable<TSnapshot> {
-    getSnapshot(): TSnapshot
+  getSnapshot(): TSnapshot;
 
-    setFromSnapshot(snapshot: TSnapshot): void
+  setFromSnapshot(snapshot: TSnapshot): void;
 }
