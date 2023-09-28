@@ -3,7 +3,7 @@ import { get } from 'svelte/store';
 import userState, { leaveRunningGame } from '../../state/user';
 import type { User } from '../models/user';
 import { socketMessageType } from '../shared/constants';
-import { gameClient } from '../main';
+import { disposeGameClient, gameClient } from '../main';
 
 export class socketService {
   private static instance: socketService = null;
@@ -12,6 +12,8 @@ export class socketService {
   private static socketServer = import.meta.env.VITE_SOCKET_URL;
 
   private constructor(gameId: string, gameHost: User) {
+
+    console.log('creating socketService')
     const client = <User>{
       username: get(userState).username,
       userid: get(userState).userid,
@@ -67,6 +69,7 @@ export class socketService {
             u.isInGame = false;
             u.isInGameLobby = false;
             socketService.resetSocketService();
+            disposeGameClient();
           }
         return u;
       });
@@ -112,7 +115,6 @@ export class socketService {
     socketService.socket.on(socketMessageType.playerWinsGame, () => {
       alert('You won the game! 🦝');
       leaveRunningGame();
-      socketService.resetSocketService();
     });
   }
 
@@ -154,7 +156,8 @@ export class socketService {
     socketService.socket.emit(socketMessageType.playerWinsGame);
   }
 
-  private static resetSocketService() {
+  public static resetSocketService() {
+    console.log('resetting socketService')
     socketService.socket.disconnect();
     socketService.instance = null;
     socketService.socket = null;

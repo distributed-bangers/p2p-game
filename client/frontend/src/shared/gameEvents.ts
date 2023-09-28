@@ -35,13 +35,14 @@ export async function loseGame(): Promise<ResponseGame> {
             else throw new Error(errorMessages.serverError);
         }
 
-        //* Calls the socketService to notify all remaining players, that the player lost
-        socketService.loseGame(result.data.game._id, result.data.game.host);
-
         //* Calls the socketService to notify the only remaining player, that he won
         if (result.data.game.finished) {
             socketService.winGame(result.data.game._id, result.data.game.host);
         }
+
+        //* Calls the socketService to notify all remaining players, that the player lost
+        socketService.loseGame(result.data.game._id, result.data.game.host);
+
 
         alert('You lost the game! Returning to lobby now...');
         leaveRunningGame();
