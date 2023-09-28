@@ -21,7 +21,7 @@ const stoneObject = await new Promise<THREE.Group>((resolve) => {
                 objLoader.load(
                     'stones/Stones.obj',
                     (object) => {
-                        object.scale.set(0.5,0.5,0.5)
+                        object.scale.set(0.09,0.09,0.09)
                         resolve(object)
                     },
                     (xhr) => {
@@ -52,7 +52,7 @@ const meatObject = await new Promise<THREE.Group>((resolve) => {
             objLoader.load(
                 'meat/Meat.obj',
                 (object) => {
-                    object.scale.set(0.5,0.5,0.5)
+                    object.scale.set(0.07,0.07,0.07)
                     resolve(object)
                 },
                 (xhr) => {
@@ -83,7 +83,7 @@ const bulletObject = await new Promise<THREE.Group>((resolve) => {
             objLoader.load(
                 'trashcan/trashcan.obj',
                 (object) => {
-                    object.scale.set(0.5,0.5,0.5)
+                    object.scale.set(0.2,0.2,0.2)
                     resolve(object)
                 },
                 (xhr) => {
@@ -253,6 +253,6 @@ export class Bonus extends Physics.CollidableMesh {
 
 export class Meat extends Bonus{
     constructor() {
-        super(stoneObject.clone());
+        super(meatObject.clone());
         this.updateBoundingVolume()
     }}
