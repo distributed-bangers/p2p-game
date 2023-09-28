@@ -7,10 +7,7 @@ import { DataConnection, Peer, PeerConnectOption } from "peerjs";
 export default class PeerClient extends Peer {
   readonly peers = new Set<string>();
 
-  private constructor(
-    id = "",
-    options = { host: "localhost", port: 5173, path: "/peerserver" },
-  ) {
+  private constructor(id = "", options = {}) {
     super(id, options);
   }
 
@@ -73,7 +70,7 @@ export default class PeerClient extends Peer {
     peerId: string,
     options?: PeerConnectOption,
   ): Promise<DataConnection> {
-    return new Promise<DataConnection>(async (resolve, reject) => {
+    return new Promise<DataConnection>((resolve, reject) => {
       if (this.peers.has(peerId)) {
         reject(`connection to ${peerId} already exists`);
       }

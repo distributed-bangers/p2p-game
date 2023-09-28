@@ -1,10 +1,10 @@
 export interface Updatable {
   needsUpdate: boolean;
 
-  update(): void;
+  update(time: DOMHighResTimeStamp): void;
 }
 
-export function isUpdatable(any: any): any is Updatable {
+export function isUpdatable(any: unknown): any is Updatable {
   return (
     typeof any === "object" &&
     any !== null &&

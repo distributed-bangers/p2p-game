@@ -1,6 +1,7 @@
 import * as Physics from "./physics";
 import * as THREE from "three";
 import { GameClient } from "./client";
+import { CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 
 function createBackground() {
   const backgroundGeometry = new THREE.PlaneGeometry(100, 100);
@@ -27,13 +28,21 @@ function createCamera() {
   return camera;
 }
 
-function createLights() {}
+function createLights() {
+  const hemiLight = new THREE.HemisphereLight(0xffffff, 0x8d8d8d, 3);
+
+  hemiLight.position.set(0, 20, 0);
+
+  return hemiLight;
+}
 
 export default class Renderer {
   private readonly camera: THREE.PerspectiveCamera;
   private canvas: HTMLCanvasElement | OffscreenCanvas | undefined;
+  private lastSnapshotTime = 0;
   private gameClient: GameClient;
   private renderer: THREE.WebGLRenderer;
+  private labelRenderer: CSS2DRenderer = new CSS2DRenderer();
   scene: Physics.PhysicsScene;
 
   constructor(gameClient: GameClient) {
@@ -44,8 +53,13 @@ export default class Renderer {
     this.scene = new Physics.PhysicsScene();
 
     this.scene.loadFloor();
-    const background = createBackground();
-    this.scene.add(background);
+    this.scene.add(createBackground());
+    this.scene.add(createLights());
+
+    this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    this.labelRenderer.domElement.style.position = "absolute";
+    this.labelRenderer.domElement.style.top = "0px";
+    document.body.appendChild(this.labelRenderer.domElement);
   }
 
   initialize(
@@ -64,9 +78,6 @@ export default class Renderer {
     this.camera.aspect = width / height;
 
     this.animate(0);
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x8d8d8d, 3);
-    hemiLight.position.set(0, 20, 0);
-    this.scene.add(hemiLight);
   }
 
   onResize(width: number, height: number) {
@@ -84,15 +95,19 @@ export default class Renderer {
     this.scene.remove(object);
   }
 
-  animate(time: number) {
-    this.scene.update();
-    this.gameClient.sendSnapshot();
+  animate(time: DOMHighResTimeStamp) {
+    this.scene.update(time);
 
-    /*
-        this.camera.position.x = this.gameClient.player.position.x
-        this.camera.position.y = this.gameClient.player.position.y + 20
-        this.camera.position.z = this.gameClient.player.position.z + 5
-        */
+    // only sync snapshots at 20fps
+    if (time - this.lastSnapshotTime > 1000 / 20) {
+      this.gameClient.sendSnapshot();
+      this.lastSnapshotTime =
+        time - ((time - this.lastSnapshotTime) % (1000 / 20));
+    }
+
+    this.camera.position.x = this.gameClient.player.position.x;
+    this.camera.position.y = this.gameClient.player.position.y + 20;
+    this.camera.position.z = this.gameClient.player.position.z + 5;
 
     requestAnimationFrame((time) => this.animate(time));
     this.render();
@@ -100,5 +115,6 @@ export default class Renderer {
 
   render() {
     this.renderer.render(this.scene, this.camera);
+    this.labelRenderer.render(this.scene, this.camera);
   }
 }

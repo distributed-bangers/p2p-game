@@ -7,14 +7,14 @@ export class PhysicsScene extends THREE.Scene {
     super();
   }
 
-  update(): void {
+  update(time: DOMHighResTimeStamp): void {
     const collidableMeshes: CollidableMesh[] = this.children.filter((object) =>
       isCollidable(object),
     ) as CollidableMesh[];
 
     this.traverse((object) => {
       if (isUpdatable(object) && object.needsUpdate) {
-        object.update();
+        object.update(time);
       }
 
       if (isCollidable(object)) {

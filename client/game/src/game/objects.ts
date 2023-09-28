@@ -3,8 +3,9 @@ import * as Physics from "../physics";
 import { Snapshot } from "./snapshots";
 import { Inputs } from "../client";
 import { Updatable } from "../physics";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { AnimationMixer } from "three";
+import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 const loader = new GLTFLoader();
 
@@ -29,9 +30,22 @@ abstract class PhysicsObject
   }
 }
 
+/*
+class HealthBar extends THREE.Mesh {
+  constructor() {
+    const geometry = new THREE.PlaneGeometry(1, hei);
+    const material = new THREE.MeshBasicMaterial({ color: "red" });
+
+    const text = new TextGeometry("TEST");
+
+    super(geometry, material);
+  }
+}*/
+
 export class Player extends PhysicsObject implements Updatable {
   private actions = {};
   private clock = new THREE.Clock();
+  health = 100;
   private mixer: AnimationMixer;
   bullets: Bullet[] = [];
   inputs: Inputs = {
@@ -49,30 +63,40 @@ export class Player extends PhysicsObject implements Updatable {
 
   constructor(color: THREE.ColorRepresentation) {
     super();
+
     loader.load(
       "racoon.glb",
       (gltf) => {
-        this.add(gltf.scene);
+        this.add(gltf.scene.children[0]);
         this.animations = gltf.animations;
       },
       // called while loading is progressing
-      function (xhr) {
+      (xhr) => {
         console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
       },
       // called when loading has errors
-      function (error) {
+      () => {
         console.log("An error happened");
       },
     );
 
     this.mixer = new AnimationMixer(this);
-    /*
-        const playerGeometry = new THREE.CapsuleGeometry(1, 1, 4, 8)
-        const playerMaterial = new THREE.MeshBasicMaterial({ color: color })
-        super(playerGeometry, playerMaterial)
-        this.position.y = 1.5*/
+
+    this.position.y = 0.1;
 
     this.needsUpdate = true;
+
+    const moonMassDiv = document.createElement("progress");
+    moonMassDiv.max = this.health;
+    moonMassDiv.value = this.health;
+
+    const healthBarLabel = new CSS2DObject(moonMassDiv);
+    healthBarLabel.position.set(
+      this.position.x,
+      this.position.y + 3,
+      this.position.z,
+    );
+    this.add(healthBarLabel);
   }
 
   spawnBullet() {
@@ -97,6 +121,7 @@ export class Player extends PhysicsObject implements Updatable {
   update() {
     this.mixer.update(this.clock.getDelta());
     this.updateInputs();
+    this.updateBoundingVolume();
   }
 
   updateInputs(): void {
@@ -124,15 +149,6 @@ export class Player extends PhysicsObject implements Updatable {
   }
 }
 
-class Gun extends THREE.Mesh {
-  constructor() {
-    const gunGeometry = new THREE.CylinderGeometry(0.2, 0.2, 1);
-    const gunMaterial = new THREE.MeshBasicMaterial({ color: "black" });
-
-    super(gunGeometry, gunMaterial);
-  }
-}
-
 export class Bullet extends PhysicsObject implements Updatable {
   needsUpdate: boolean = true;
 
@@ -141,10 +157,22 @@ export class Bullet extends PhysicsObject implements Updatable {
     const bulletMaterial = new THREE.MeshBasicMaterial({ color: "red" });
 
     super(bulletGeometry, bulletMaterial);
+
+    this.onCollision = (collisionTarget) => {
+      const hitPlayer = collisionTarget as Player;
+
+      if (hitPlayer.bullets.includes(this)) return;
+
+      hitPlayer.health -= 50;
+      this.removeFromParent();
+
+      if (hitPlayer.health > 0) return;
+    };
   }
 
   update() {
     this.translateZ(0.1);
+    this.updateBoundingVolume();
   }
 }
 
