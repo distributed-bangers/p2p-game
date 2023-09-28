@@ -42,7 +42,7 @@ export class GameClient {
     });
 
     this.id = peerClient.id;
-    this.player = new Player("blue");
+    this.player = new Player("blue", this.id);
     this.renderer = new Renderer(this);
 
     this.addPlayer(this.id, this.player);
@@ -88,7 +88,7 @@ export class GameClient {
     this.onConnection(dataConnection);
   }
 
-  onGameFinished(callBack: (highscore: number) => any) {}
+  onGameFinished(callBack: (highscore: number) => any) { }
 
   onPlayerDisconnect(playerId: string) {
     this.removePlayer(playerId);
@@ -107,7 +107,7 @@ export class GameClient {
     const peer: Peer = { id: id, connection: dataConnection };
     this.peers.push(peer);
 
-    const player = new Player("red");
+    const player = new Player("red", id);
     this.addPlayer(id, player);
 
     dataConnection.on("data", (data) => {

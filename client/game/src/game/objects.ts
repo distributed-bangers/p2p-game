@@ -1,11 +1,14 @@
 import * as THREE from "three";
 import * as Physics from "../physics";
 import { Snapshot } from "./snapshots";
-import { Inputs } from "../client";
+import { GameClient, Inputs } from "../client";
 import { Updatable } from "../physics";
 import { AnimationMixer } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { loseGame } from "../../../frontend/src/shared/gameEvents.js";
+import { get } from "svelte/store";
+import userState from '../../../frontend/state/user.js';
 
 const loader = new GLTFLoader();
 
@@ -43,6 +46,7 @@ class HealthBar extends THREE.Mesh {
 }*/
 
 export class Player extends PhysicsObject implements Updatable {
+  public readonly playerId: string;
   private actions = {};
   private clock = new THREE.Clock();
   health = 100;
@@ -61,9 +65,10 @@ export class Player extends PhysicsObject implements Updatable {
   onCollision = () =>
     (this.material = new THREE.MeshBasicMaterial({ color: "green" }));
 
-  constructor(color: THREE.ColorRepresentation) {
+  constructor(color: THREE.ColorRepresentation, id: string) {
     super();
 
+    this.playerId = id;
     loader.load(
       "racoon.glb",
       (gltf) => {
@@ -167,7 +172,11 @@ export class Bullet extends PhysicsObject implements Updatable {
       this.removeFromParent();
 
       if (hitPlayer.health > 0) return;
-    };
+      
+      if ((hitPlayer as Player).playerId == get(userState).userid) {
+        loseGame();
+      };
+    }
   }
 
   update() {
