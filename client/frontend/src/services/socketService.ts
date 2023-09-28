@@ -69,7 +69,6 @@ export class socketService {
             u.isInGame = false;
             u.isInGameLobby = false;
             socketService.resetSocketService();
-            disposeGameClient();
           }
         return u;
       });

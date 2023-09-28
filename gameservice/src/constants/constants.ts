@@ -1,6 +1,6 @@
 export const apiURL = '/api/v1'
 
-export const maxNumberOfPlayers = 3;
+export const maxNumberOfPlayers = 2;
 
 export enum socketio {
     playerJoinsLobby = 'playerJoinsLobby',

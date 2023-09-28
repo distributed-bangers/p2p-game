@@ -43,7 +43,6 @@ export const leaveRunningGame = () => {
     return u;
   });
   socketService.resetSocketService();
-  disposeGameClient();
 };
 
 export default user;

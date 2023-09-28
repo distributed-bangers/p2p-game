@@ -17,8 +17,4 @@ export async function initializeGameClient(myId: string) {
   });
 }
 
-export function disposeGameClient() {
-  gameClient = null;
-}
-
 export default app
