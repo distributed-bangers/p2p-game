@@ -32,6 +32,7 @@ export abstract class CollidableMesh<
     }
 }
 
+
 export function isCollidable(any:any) : any is CollidableMesh {
     return (any as CollidableMesh).isCollidable
 }

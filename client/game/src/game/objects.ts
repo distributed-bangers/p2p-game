@@ -4,9 +4,105 @@ import { Snapshot } from './snapshots'
 import { Inputs } from '../client'
 import { Updatable } from '../physics'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { AnimationMixer } from 'three'
+import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
+import {OBJLoader} from "three/examples/jsm/loaders/OBJLoader.js";
 
 const loader = new GLTFLoader()
+const mtlLoader: MTLLoader = new MTLLoader()
+
+const stoneObject = await new Promise<THREE.Group>((resolve) => {
+        mtlLoader.load(
+            'stones/Stones.mtl',
+            (materials) => {
+                materials.preload()
+
+                const objLoader = new OBJLoader()
+                objLoader.setMaterials(materials)
+                objLoader.load(
+                    'stones/Stones.obj',
+                    (object) => {
+                        object.scale.set(0.5,0.5,0.5)
+                        resolve(object)
+                    },
+                    (xhr) => {
+                        console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+                    },
+                    (error) => {
+                        console.log('An error happened')
+                    }
+                )
+            },
+            (xhr) => {
+                console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+            },
+            (error) => {
+                console.log('An error happened')
+            }
+        )
+})
+
+const meatObject = await new Promise<THREE.Group>((resolve) => {
+    mtlLoader.load(
+        'meat/Meat.mtl',
+        (materials) => {
+            materials.preload()
+
+            const objLoader = new OBJLoader()
+            objLoader.setMaterials(materials)
+            objLoader.load(
+                'meat/Meat.obj',
+                (object) => {
+                    object.scale.set(0.5,0.5,0.5)
+                    resolve(object)
+                },
+                (xhr) => {
+                    console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+                },
+                (error) => {
+                    console.log('An error happened')
+                }
+            )
+        },
+        (xhr) => {
+            console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+        },
+        (error) => {
+            console.log('An error happened')
+        }
+    )
+})
+
+const bulletObject = await new Promise<THREE.Group>((resolve) => {
+    mtlLoader.load(
+        'trashcan/trashcan.mtl',
+        (materials) => {
+            materials.preload()
+
+            const objLoader = new OBJLoader()
+            objLoader.setMaterials(materials)
+            objLoader.load(
+                'trashcan/trashcan.obj',
+                (object) => {
+                    object.scale.set(0.5,0.5,0.5)
+                    resolve(object)
+                },
+                (xhr) => {
+                    console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+                },
+                (error) => {
+                    console.log('An error happened')
+                }
+            )
+        },
+        (xhr) => {
+            console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+        },
+        (error) => {
+            console.log('An error happened')
+        }
+    )
+})
+
 
 abstract class PhysicsObject extends Physics.CollidableMesh implements Physics.Snapshotable<Snapshot> {
     getSnapshot(): Snapshot {
@@ -22,7 +118,7 @@ abstract class PhysicsObject extends Physics.CollidableMesh implements Physics.S
 export class Player extends PhysicsObject implements Updatable {
     private actions = {}
     private clock = new THREE.Clock
-    private mixer: AnimationMixer
+    private mixer: THREE.AnimationMixer
     bullets: Bullet[] = []
     inputs: Inputs = {
         moveDown: false, moveLeft: false, moveRight: false, moveUp: false, shoot: false,
@@ -53,7 +149,7 @@ export class Player extends PhysicsObject implements Updatable {
 
             })
 
-        this.mixer = new AnimationMixer(this)
+        this.mixer = new THREE.AnimationMixer(this)
         /*
         const playerGeometry = new THREE.CapsuleGeometry(1, 1, 4, 8)
         const playerMaterial = new THREE.MeshBasicMaterial({ color: color })
@@ -71,7 +167,7 @@ export class Player extends PhysicsObject implements Updatable {
             .setEffectiveTimeScale(1)
             .setEffectiveWeight(2)
             .fadeIn(1).play()
-        const bullet = new Bullet()
+        const bullet = new Bullet(bulletObject.clone())
 
         this.getWorldPosition(bullet.position)
         this.getWorldQuaternion(bullet.quaternion)
@@ -122,27 +218,41 @@ class Gun extends THREE.Mesh {
 
 export class Bullet extends PhysicsObject implements Updatable{
     needsUpdate: boolean = true
-
-    constructor() {
-        const bulletGeometry = new THREE.SphereGeometry(0.1)
-        const bulletMaterial = new THREE.MeshBasicMaterial({ color: 'red' })
-
-        super(bulletGeometry, bulletMaterial)
+    constructor(trashCan : THREE.Group) {
+        super()
+        this.add(trashCan)
     }
 
     update() {
         this.translateZ(0.1)
     }
-
 }
 
-export class RigidObject extends Physics.CollidableMesh {
-    constructor(color: THREE.ColorRepresentation, vertices: THREE.Vector3) {
-        const playerGeometry = new THREE.BoxGeometry(1, 1, 1)
-        const playerMaterial = new THREE.MeshBasicMaterial({ color: color })
-        super(playerGeometry, playerMaterial)
-        this.position.set(vertices.x, vertices.y, vertices.z)
+export class Obstacle extends Physics.CollidableMesh {
+    constructor(wall: THREE.Group) {
+        super()
+        this.add(wall)
+        this.position.set(0,0,5)
     }
-
     onCollision = () => this.material = new THREE.MeshBasicMaterial({ color: 'red' })
 }
+export class Stone extends Obstacle{
+    constructor() {
+        super(stoneObject);
+        this.updateBoundingVolume()
+}}
+
+export class Bonus extends Physics.CollidableMesh {
+    constructor(meat: THREE.Group) {
+        super()
+        this.add(meat)
+        this.position.set(0,0,5)
+    }
+    onCollision = () => this.material = new THREE.MeshBasicMaterial({ color: 'red' })
+}
+
+export class Meat extends Bonus{
+    constructor() {
+        super(stoneObject);
+        this.updateBoundingVolume()
+    }}

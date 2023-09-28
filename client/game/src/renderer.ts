@@ -1,6 +1,9 @@
 import * as Physics from './physics'
 import * as THREE from 'three'
 import { GameClient } from './client'
+import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
+import { Meat, Stone} from "./game/objects";
+
 
 function createBackground() {
     const backgroundGeometry = new THREE.PlaneGeometry(100, 100)
@@ -32,6 +35,8 @@ export default class Renderer {
     private gameClient: GameClient
     private renderer: THREE.WebGLRenderer
     scene: Physics.PhysicsScene
+    wallObject : THREE.Group= new THREE.Group()
+    meatObject : THREE.Group= new THREE.Group()
 
 
     constructor(gameClient: GameClient) {
@@ -40,11 +45,13 @@ export default class Renderer {
         this.gameClient = gameClient
         this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas })
         this.scene = new Physics.PhysicsScene()
-
-        this.scene.loadFloor()
+        // this.loadFloor()
         const background = createBackground()
         this.scene.add(background)
+        this.addObstacles()
+        this.addBonuses()
     }
+
 
     initialize(canvas: HTMLCanvasElement | OffscreenCanvas, width: number, height: number) {
         this.canvas = canvas
@@ -120,4 +127,16 @@ export default class Renderer {
     render() {
         this.renderer.render(this.scene, this.camera)
     }
+
+    addObstacles(){
+        const stone = new Stone()
+        stone.position.set(12,5,5)
+        this.scene.add(stone)
+    }
+    addBonuses(){
+        const meat = new Meat()
+        meat.position.set(0,0,5)
+        this.scene.add(meat)
+    }
+
 }
