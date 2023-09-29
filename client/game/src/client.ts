@@ -102,6 +102,8 @@ export class GameClient {
     //
     endGame() {
         this.peers.forEach((peer) => peer.connection.close());
+        this.renderer?.stopAnimating();
+        this.renderer?.labelRenderer.domElement.remove();
         delete this.gameId;
         delete this.renderer;
         this.state = {};
@@ -155,7 +157,9 @@ export class GameClient {
         const peer: Peer = { id: id, connection: dataConnection };
         this.peers.push(peer);
 
-        // const player = ;
+        // if (!this.state[id]) {
+        //     this.addPlayer(id, new Player("red", id));
+        // }
 
         dataConnection.on("data", (data) => {
             if (isSceneSnapshot(data)) {

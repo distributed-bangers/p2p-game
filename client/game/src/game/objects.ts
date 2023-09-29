@@ -2,11 +2,11 @@ import * as THREE from 'three'
 import * as Physics from '../physics'
 import { Snapshot } from './snapshots'
 import { Inputs } from '../client'
-import {CollidableMesh, Updatable} from '../physics'
+import { CollidableMesh, Updatable } from '../physics'
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
-import {OBJLoader} from "three/examples/jsm/loaders/OBJLoader.js";
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import { loseGame } from "../../../frontend/src/shared/gameEvents.js";
 import { get } from "svelte/store";
 import userState from '../../../frontend/state/user.js';
@@ -15,96 +15,96 @@ const loader = new GLTFLoader()
 const mtlLoader: MTLLoader = new MTLLoader()
 
 const stoneObject = await new Promise<THREE.Group>((resolve) => {
-        mtlLoader.load(
-            'stones/Stones.mtl',
-            (materials) => {
-                materials.preload()
+  mtlLoader.load(
+    'stones/Stones.mtl',
+    (materials) => {
+      materials.preload()
 
-                const objLoader = new OBJLoader()
-                objLoader.setMaterials(materials)
-                objLoader.load(
-                    'stones/Stones.obj',
-                    (object) => {
-                        object.scale.set(0.15,0.15,0.15)
-                        resolve(object)
-                    },
-                    (xhr) => {
-                        console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
-                    },
-                    (error) => {
-                        console.log('An error happened')
-                    }
-                )
-            },
-            (xhr) => {
-                console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
-            },
-            (error) => {
-                console.log('An error happened')
-            }
-        )
+      const objLoader = new OBJLoader()
+      objLoader.setMaterials(materials)
+      objLoader.load(
+        'stones/Stones.obj',
+        (object) => {
+          object.scale.set(0.15, 0.15, 0.15)
+          resolve(object)
+        },
+        (xhr) => {
+          console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+        },
+        (error) => {
+          console.log('An error happened')
+        }
+      )
+    },
+    (xhr) => {
+      console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+    },
+    (error) => {
+      console.log('An error happened')
+    }
+  )
 })
 
 const meatObject = await new Promise<THREE.Group>((resolve) => {
-    mtlLoader.load(
-        'meat/Meat.mtl',
-        (materials) => {
-            materials.preload()
+  mtlLoader.load(
+    'meat/Meat.mtl',
+    (materials) => {
+      materials.preload()
 
-            const objLoader = new OBJLoader()
-            objLoader.setMaterials(materials)
-            objLoader.load(
-                'meat/Meat.obj',
-                (object) => {
-                    object.scale.set(0.08,0.08,0.08)
-                    resolve(object)
-                },
-                (xhr) => {
-                    console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
-                },
-                (error) => {
-                    console.log('An error happened')
-                }
-            )
+      const objLoader = new OBJLoader()
+      objLoader.setMaterials(materials)
+      objLoader.load(
+        'meat/Meat.obj',
+        (object) => {
+          object.scale.set(0.08, 0.08, 0.08)
+          resolve(object)
         },
         (xhr) => {
-            console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+          console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
         },
         (error) => {
-            console.log('An error happened')
+          console.log('An error happened')
         }
-    )
+      )
+    },
+    (xhr) => {
+      console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+    },
+    (error) => {
+      console.log('An error happened')
+    }
+  )
 })
 
 const bulletObject = await new Promise<THREE.Group>((resolve) => {
-    mtlLoader.load(
-        'trashcan/trashcan.mtl',
-        (materials) => {
-            materials.preload()
+  mtlLoader.load(
+    'trashcan/trashcan.mtl',
+    (materials) => {
+      materials.preload()
 
-            const objLoader = new OBJLoader()
-            objLoader.setMaterials(materials)
-            objLoader.load(
-                'trashcan/trashcan.obj',
-                (object) => {
-                    object.scale.set(0.2,0.2,0.2)
-                    resolve(object)
-                },
-                (xhr) => {
-                    console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
-                },
-                (error) => {
-                    console.log('An error happened')
-                }
-            )
+      const objLoader = new OBJLoader()
+      objLoader.setMaterials(materials)
+      objLoader.load(
+        'trashcan/trashcan.obj',
+        (object) => {
+          object.scale.set(0.2, 0.2, 0.2)
+          resolve(object)
         },
         (xhr) => {
-            console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+          console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
         },
         (error) => {
-            console.log('An error happened')
+          console.log('An error happened')
         }
-    )
+      )
+    },
+    (xhr) => {
+      console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+    },
+    (error) => {
+      console.log('An error happened')
+    }
+  )
 })
 
 
@@ -145,8 +145,9 @@ export class Player extends PhysicsObject implements Updatable {
   public readonly playerId: string;
   private actions = {};
   private clock = new THREE.Clock();
-  health = 100;
+  private _health = 100;
   private mixer: THREE.AnimationMixer;
+  private healthBar: HTMLProgressElement;
   bullets: Bullet[] = [];
   inputs: Inputs = {
     moveDown: false,
@@ -158,11 +159,26 @@ export class Player extends PhysicsObject implements Updatable {
   shootCooldown = 0;
   needsUpdate: boolean;
 
-  onCollision = () =>
-    (this.material = new THREE.MeshBasicMaterial({ color: "green" }));
+  set health(value: number) {
+    this._health = value;
+    this.healthBar.value = value;
+    console.log(this._health)
+  }
+
+  get health() {
+    return this._health;
+  }
+
+  // onCollision = () =>{
+
+  //     console.log('collided with player')
+  // }
+  // (this.material = new THREE.MeshBasicMaterial({ color: "green" }));
 
   constructor(color: THREE.ColorRepresentation, id: string) {
     super();
+
+    this.bullets = [];
 
     this.playerId = id;
     loader.load(
@@ -180,23 +196,23 @@ export class Player extends PhysicsObject implements Updatable {
         console.log("An error happened");
       },
     );
-
+    this.updateBoundingVolume();
 
     this.position.y = 0.1;
 
-        this.mixer = new THREE.AnimationMixer(this)
-        /*
-        const playerGeometry = new THREE.CapsuleGeometry(1, 1, 4, 8)
-        const playerMaterial = new THREE.MeshBasicMaterial({ color: color })
-        super(playerGeometry, playerMaterial)
-        this.position.y = 1.5*/
+    this.mixer = new THREE.AnimationMixer(this)
+    /*
+    const playerGeometry = new THREE.CapsuleGeometry(1, 1, 4, 8)
+    const playerMaterial = new THREE.MeshBasicMaterial({ color: color })
+    super(playerGeometry, playerMaterial)
+    this.position.y = 1.5*/
     this.needsUpdate = true;
 
-    const moonMassDiv = document.createElement("progress");
-    moonMassDiv.max = this.health;
-    moonMassDiv.value = this.health;
+    this.healthBar = document.createElement("progress");
+    this.healthBar.max = this.health;
+    this.healthBar.value = this.health;
 
-    const healthBarLabel = new CSS2DObject(moonMassDiv);
+    const healthBarLabel = new CSS2DObject(this.healthBar);
     healthBarLabel.position.set(
       this.position.x,
       this.position.y + 3,
@@ -205,15 +221,15 @@ export class Player extends PhysicsObject implements Updatable {
     this.add(healthBarLabel);
   }
 
-    spawnBullet() {
-        const action = this.mixer.clipAction(this.animations[0])
-        action.clampWhenFinished = true
-        action.loop = THREE.LoopOnce
-        action.reset()
-            .setEffectiveTimeScale(1)
-            .setEffectiveWeight(2)
-            .fadeIn(1).play()
-        const bullet = new Bullet(bulletObject.clone())
+  spawnBullet() {
+    const action = this.mixer.clipAction(this.animations[0])
+    action.clampWhenFinished = true
+    action.loop = THREE.LoopOnce
+    action.reset()
+      .setEffectiveTimeScale(1)
+      .setEffectiveWeight(2)
+      .fadeIn(1).play()
+    const bullet = new Bullet(bulletObject.clone(), this.playerId)
 
     this.getWorldPosition(bullet.position);
     this.getWorldQuaternion(bullet.quaternion);
@@ -253,27 +269,36 @@ export class Player extends PhysicsObject implements Updatable {
   }
 }
 
-export class Bullet extends PhysicsObject implements Updatable{
-    needsUpdate: boolean = true
-    alias = 'bullet'
-    constructor(trashCan : THREE.Group) {
-        super()
-        this.add(trashCan)
-        this.onCollision = (collisionTarget) => {
-            const hitPlayer = collisionTarget as Player;
+export class Bullet extends PhysicsObject implements Updatable {
+  playerId: string;
+  needsUpdate: boolean = true
+  alias = 'bullet'
+  constructor(trashCan: THREE.Group, id: string) {
+    super()
+    this.playerId = id;
+    this.add(trashCan)
+    this.updateBoundingVolume()
+    this.onCollision = (collisionTarget) => {
+      const hitPlayer = collisionTarget as Player;
+      if (!hitPlayer) return;
+      if (hitPlayer.playerId == this.playerId) return;
 
-            if (hitPlayer.bullets.includes(this)) return;
+      if (!hitPlayer.playerId) {
+        hitPlayer.health = hitPlayer.health - 50;
+        return;
+      }
 
-            hitPlayer.health -= 50;
-            this.removeFromParent();
+      hitPlayer.health = hitPlayer.health - 50;
 
-            if (hitPlayer.health > 0) return;
+      this.removeFromParent();
 
-            if ((hitPlayer as Player).playerId == get(userState).userid) {
-                loseGame();
-            };
-        }
+      if (hitPlayer.health > 0) return;
+
+      if ((hitPlayer as Player).playerId == get(userState).userid) {
+        loseGame();
+      };
     }
+  }
 
   update() {
     this.translateZ(0.1);
@@ -282,57 +307,34 @@ export class Bullet extends PhysicsObject implements Updatable{
 }
 
 export class Obstacle extends Physics.CollidableMesh {
-    alias = 'obstacle'
-    count: number = 0
-    constructor(wall: THREE.Group) {
-        super()
-        this.add(wall)
-        this.onCollision = (collisionTarget)=>{
-            const collidable = collisionTarget as CollidableMesh
-            if(this.count < 10){
-                if (collidable.alias == 'player'){
-                    console.log('Collided with Player')
-                }
-                else if (collidable.alias === 'bullet'){
-                    console.log('Collided with Bullet')
-                }
-                else if (collidable.alias === 'bonus'){
-                    console.log("collided with bonus")
-                    console.log(collidable.position.x, collidable.position.z)
-                }
-                this.count++
-            }
-        }
-    }
+  alias = 'obstacle'
+  count: number = 0
+  constructor(wall: THREE.Group) {
+    super()
+    this.add(wall)
+  }
 }
 
-export class Stone extends Obstacle{
-    constructor() {
-        super(stoneObject.clone());
-        this.updateBoundingVolume()
-}}
+export class Stone extends Obstacle {
+  constructor() {
+    super(stoneObject.clone());
+    this.updateBoundingVolume()
+  }
+}
 
 
 
 export class Bonus extends Physics.CollidableMesh {
-    alias= 'bonus'
-    constructor(meat: THREE.Group) {
-        super()
-        this.add(meat)
-        this.onCollision = (collisionTarget)=>{
-            const collidable = collisionTarget as CollidableMesh
-            if (collidable.alias === 'player'){
-                console.log('Collided with Player')
-            }
-            else if (collidable.alias === 'bullet'){
-                console.log('Collided with Bullet')
-            }
-        }
-    }
+  alias = 'bonus'
+  constructor(meat: THREE.Group) {
+    super()
+    this.add(meat)
+  }
 }
 
-export class Meat extends Bonus{
-    constructor() {
-        super(meatObject.clone());
-        this.updateBoundingVolume()
-    }}
+export class Meat extends Bonus {
+  constructor() {
+    super(meatObject.clone());
+    this.updateBoundingVolume()
+  }
+}

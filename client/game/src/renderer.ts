@@ -5,38 +5,38 @@ import { Meat, Stone } from './game/objects'
 import { CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 
 interface cordinates {
-    x:number;
-    z:number;
+    x: number;
+    z: number;
 }
-const random : cordinates[] = [
-    {"x":-6, "z":6},
-    {"x": 2, "z": 4},
-    {"x": -4, "z": -2},
+const random: cordinates[] = [
+    { "x": -6, "z": 6 },
+    { "x": 2, "z": 4 },
+    { "x": -4, "z": -2 },
 ]
 
 function createBackground() {
-  const backgroundGeometry = new THREE.PlaneGeometry(100, 100);
-  const backgroundMaterial = new THREE.MeshBasicMaterial();
-  const background = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
+    const backgroundGeometry = new THREE.PlaneGeometry(100, 100);
+    const backgroundMaterial = new THREE.MeshBasicMaterial();
+    const background = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
 
-  background.rotateX(THREE.MathUtils.degToRad(270));
+    background.rotateX(THREE.MathUtils.degToRad(270));
 
-  return background;
+    return background;
 }
 
 function createCamera() {
-  const camera = new THREE.PerspectiveCamera(
-    75,
-    window.innerWidth / window.innerHeight,
-    0.1,
-    1000,
-  );
+    const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000,
+    );
 
-  camera.position.y = 10;
-  camera.position.z = 3;
-  camera.lookAt(0, 0, 0);
+    camera.position.y = 10;
+    camera.position.z = 3;
+    camera.lookAt(0, 0, 0);
 
-  return camera;
+    return camera;
 }
 
 function createLights() {
@@ -56,7 +56,8 @@ export default class Renderer {
     private lastSnapshotTime = 0;
     private gameClient: GameClient
     private renderer?: THREE.WebGLRenderer
-    private labelRenderer: CSS2DRenderer = new CSS2DRenderer();
+    labelRenderer: CSS2DRenderer = new CSS2DRenderer();
+    private lastAnimationFrameId = 0;
     scene: Physics.PhysicsScene
 
 
@@ -79,6 +80,16 @@ export default class Renderer {
         this.labelRenderer.domElement.style.top = "0px";
         document.body.appendChild(this.labelRenderer.domElement);
     }
+
+    stopAnimating() {
+        cancelAnimationFrame(this.lastAnimationFrameId)
+    }
+
+    // setLabelCanvas(div: HTMLDivElement, width: number, height: number) {
+    //     this.labelRenderer.domElement.appendChild(div);
+    //     this.labelRenderer.domElement.setAttribute("width", width.toString());
+    //     this.labelRenderer.domElement.setAttribute("height", height.toString());
+    // }
 
     /**
      * Call this method to assign a canvas to the Renderer.
@@ -104,17 +115,17 @@ export default class Renderer {
     resize(width: number, height: number) {
         this.renderer?.setSize(width, height)
 
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
-  }
+        this.camera.aspect = width / height;
+        this.camera.updateProjectionMatrix();
+    }
 
-  addObject(object: THREE.Object3D) {
-    this.scene.add(object);
-  }
+    addObject(object: THREE.Object3D) {
+        this.scene.add(object);
+    }
 
-  removeObject(object: THREE.Object3D) {
-    this.scene.remove(object);
-  }
+    removeObject(object: THREE.Object3D) {
+        this.scene.remove(object);
+    }
 
     /**
      * Handles updating the {@link PhysicsScene}, syncing state to other clients via {@link GameClient.sendSnapshot}
@@ -122,7 +133,8 @@ export default class Renderer {
      * @param time Current timestamp
      */
     animate(time: DOMHighResTimeStamp) {
-        requestAnimationFrame((time) => this.animate(time))
+        this.lastAnimationFrameId =
+            requestAnimationFrame((time) => this.animate(time))
 
         this.scene.update(time)
         this.gameClient.sendSnapshot()
@@ -146,17 +158,17 @@ export default class Renderer {
         this.labelRenderer.render(this.scene, this.camera);
     }
 
-    addObstaclesAndBonuses(){
+    addObstaclesAndBonuses() {
         for (let i = 0; i < random.length; i++) {
-            if (i%2 == 0){
+            if (i % 2 == 0) {
                 let meat = new Meat()
-                meat.position.set(random[i].x, 0,random[i].z)
+                meat.position.set(random[i].x, 0, random[i].z)
                 this.scene.add(meat)
                 console.log(meat.position)
             }
-            else{
+            else {
                 let stone = new Stone()
-                stone.position.set(random[i].x, 0,random[i].z)
+                stone.position.set(random[i].x, 0, random[i].z)
                 this.scene.add(stone)
             }
         }
