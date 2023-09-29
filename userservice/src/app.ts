@@ -13,6 +13,9 @@ let corsOptions: CorsOptions = {
     optionsSuccessStatus: 200,
 }
 
+/**
+ * Initialisation of Express app and configured accordingly
+ */
 const app = express()
 
 app.use(cors(corsOptions))

@@ -1,6 +1,9 @@
 import { Schema, model } from 'mongoose';
 import { IUser } from '../index.js';
 
+/**
+ * Schema defined as per the mongoose documentation
+ */
 const userSchema = new Schema<IUser>({
   username: {
     type: String,
@@ -21,6 +24,9 @@ const userSchema = new Schema<IUser>({
   },
 });
 
+/**
+ * Mongoose model from the schema
+ */
 const User = model<IUser>('User', userSchema);
 
 export default User;
