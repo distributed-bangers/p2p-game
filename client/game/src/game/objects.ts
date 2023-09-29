@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import * as Physics from '../physics'
 import { Snapshot } from './snapshots'
 import { Inputs } from '../client'
-import { Updatable } from '../physics'
+import {CollidableMesh, Updatable} from '../physics'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
 import {OBJLoader} from "three/examples/jsm/loaders/OBJLoader.js";
@@ -21,7 +21,7 @@ const stoneObject = await new Promise<THREE.Group>((resolve) => {
                 objLoader.load(
                     'stones/Stones.obj',
                     (object) => {
-                        object.scale.set(0.09,0.09,0.09)
+                        object.scale.set(0.15,0.15,0.15)
                         resolve(object)
                     },
                     (xhr) => {
@@ -52,7 +52,7 @@ const meatObject = await new Promise<THREE.Group>((resolve) => {
             objLoader.load(
                 'meat/Meat.obj',
                 (object) => {
-                    object.scale.set(0.07,0.07,0.07)
+                    object.scale.set(0.08,0.08,0.08)
                     resolve(object)
                 },
                 (xhr) => {
@@ -127,6 +127,7 @@ export class Player extends PhysicsObject implements Updatable {
     needsUpdate: boolean
 
     onCollision = () => this.material = new THREE.MeshBasicMaterial({ color: 'green' })
+    alias = 'player'
 
     constructor(color: THREE.ColorRepresentation) {
         super()
@@ -157,6 +158,7 @@ export class Player extends PhysicsObject implements Updatable {
         this.position.y = 1.5*/
 
         this.needsUpdate = true
+        console.log("player" + this.position.x + " ," + this.position.y + " ,"+ this.position.z + " ,")
     }
 
     spawnBullet() {
@@ -218,9 +220,11 @@ class Gun extends THREE.Mesh {
 
 export class Bullet extends PhysicsObject implements Updatable{
     needsUpdate: boolean = true
+    alias = 'bullet'
     constructor(trashCan : THREE.Group) {
         super()
         this.add(trashCan)
+
     }
 
     update() {
@@ -229,26 +233,53 @@ export class Bullet extends PhysicsObject implements Updatable{
 }
 
 export class Obstacle extends Physics.CollidableMesh {
+    alias = 'obstacle'
+    count: number = 0
     constructor(wall: THREE.Group) {
         super()
         this.add(wall)
-        this.position.set(0,0,5)
+        this.onCollision = (collisionTarget)=>{
+            const collidable = collisionTarget as CollidableMesh
+            if(this.count < 10){
+                if (collidable.alias == 'player'){
+                    console.log('Collided with Player')
+                }
+                else if (collidable.alias === 'bullet'){
+                    console.log('Collided with Bullet')
+                }
+                else if (collidable.alias === 'bonus'){
+                    console.log("collided with bonus")
+                    console.log(collidable.position.x, collidable.position.z)
+                }
+                this.count++
+            }
+        }
     }
-    onCollision = () => this.material = new THREE.MeshBasicMaterial({ color: 'red' })
 }
+
 export class Stone extends Obstacle{
     constructor() {
         super(stoneObject.clone());
         this.updateBoundingVolume()
 }}
 
+
+
 export class Bonus extends Physics.CollidableMesh {
+    alias= 'bonus'
     constructor(meat: THREE.Group) {
         super()
         this.add(meat)
-        this.position.set(0,0,5)
+        this.onCollision = (collisionTarget)=>{
+            const collidable = collisionTarget as CollidableMesh
+            if (collidable.alias === 'player'){
+                console.log('Collided with Player')
+            }
+            else if (collidable.alias === 'bullet'){
+                console.log('Collided with Bullet')
+            }
+        }
     }
-    onCollision = () => this.material = new THREE.MeshBasicMaterial({ color: 'red' })
 }
 
 export class Meat extends Bonus{

@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import {resolveObjectURL} from "buffer";
 
 export abstract class CollidableMesh<
     TGeometry extends THREE.BufferGeometry = THREE.BufferGeometry,
@@ -9,6 +10,8 @@ export abstract class CollidableMesh<
     readonly isCollidable: true
 
     onCollision?: (collisionTarget: THREE.Object3D) => void
+
+    public alias? : string
 
     private boundingVolume: THREE.Box3 = new THREE.Box3()
 
