@@ -110,10 +110,10 @@ io.on('connection', (socket) => {
         await leaveAndCleanUp(socketio.playerLosesGame)
     })
 
-    //* last losing player sends this when he loses game => cleans up own socket and sends to one remaining player
+    //* last losing player sends this when he loses game
+    //* no need the cleanup, because the player will send loseGame-event as well
     socket.on(socketio.playerWinsGame, async () => {
         socket.to(gameId).emit(socketio.playerWinsGame)
-        // await leaveAndCleanUp(socketio.playerWinsGame)
     })
 })
 export default httpServer

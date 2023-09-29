@@ -3,7 +3,7 @@ import { get } from 'svelte/store';
 import userState, { leaveRunningGame } from '../../state/user';
 import type { User } from '../models/user';
 import { socketMessageType } from '../shared/constants';
-import { disposeGameClient, gameClient } from '../main';
+import { gameClient } from '../main';
 
 export class socketService {
   private static instance: socketService = null;
@@ -13,7 +13,6 @@ export class socketService {
 
   private constructor(gameId: string, gameHost: User) {
 
-    console.log('creating socketService')
     const client = <User>{
       username: get(userState).username,
       userid: get(userState).userid,
@@ -44,9 +43,10 @@ export class socketService {
     socketService.socket.on(socketMessageType.playerLeavesLobby, (data: string) => {
       const player: User = JSON.parse(data);
       userState.update((u) => {
-        u.game.players = u.game.players.filter(
+        const reaminingPlayers = u.game.players.filter(
           (p) => p.userid != player.userid,
         );
+        u.game.players = reaminingPlayers;
         return u;
       });
     });
@@ -74,7 +74,7 @@ export class socketService {
       });
     })
 
-    //* Host leaves lobby, I return to the game 
+    //* Host leaves lobby
     socketService.socket.on(socketMessageType.hostLeavesLobby, () => {
       userState.update((u) => {
         if (u.game) {
@@ -130,7 +130,7 @@ export class socketService {
 
   public static leaveLobby(gameId: string, gameHost: User) {
     if (socketService.instance) socketService.getInstance(gameId, gameHost);
-    socketService.socket.emit(socketMessageType.playerLeavesGame);
+    socketService.socket.emit(socketMessageType.playerLeavesLobby);
     socketService.resetSocketService();
   }
 
@@ -156,8 +156,6 @@ export class socketService {
   }
 
   public static resetSocketService() {
-    console.log('resetting socketService')
-    socketService.socket.disconnect();
     socketService.instance = null;
     socketService.socket = null;
   }

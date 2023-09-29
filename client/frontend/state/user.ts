@@ -1,7 +1,6 @@
 import { writable } from 'svelte/store';
 import type { Game } from '../src/models/game';
 import { authenticateJWT } from '../src/shared/auth';
-import { disposeGameClient, gameClient } from '../src/main';
 import { socketService } from '../src/services/socketService';
 
 const token = document.cookie;
