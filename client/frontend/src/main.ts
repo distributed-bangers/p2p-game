@@ -17,4 +17,8 @@ export async function initializeGameClient(myId: string) {
   });
 }
 
+export function destroyGameClient() {
+  gameClient.endGame();
+}
+
 export default app

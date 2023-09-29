@@ -4,7 +4,7 @@
   import userState from '../../state/user';
   import { get } from 'svelte/store';
     import { on } from 'events';
-    import { gameClient, initializeGameClient } from '../main';
+    import { destroyGameClient, gameClient, initializeGameClient } from '../main';
 
   function getOtherPlayerIds (myId: string) {
     const playerIds = get(userState).game.players.map(p => p.userid);
@@ -29,6 +29,7 @@
   });
 
   onDestroy(() => {
+    destroyGameClient();
     console.log('Game.svelte: onDestroy')
     //! HERE: gameclient needs to be properly disposed
     // TODO: stop the game client
