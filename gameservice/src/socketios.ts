@@ -66,6 +66,11 @@ io.on('connection', (socket) => {
                         await deleteGameById(gameId);
                         //* Case: Regular player lost connection
                     } else {
+                        if (game?.players)
+                            if (game?.players) {
+                                game.players = game.players.filter((p) => p.userid !== JSON.parse(player)?.userid);
+                                replaceGame(game);
+                            }
                         await leaveAndCleanUp(socketio.playerLeavesLobby);
                     }
                     //* Handling of Disconnects if game is started and not finished yet 
