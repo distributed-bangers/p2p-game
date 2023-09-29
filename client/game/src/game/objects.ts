@@ -4,7 +4,7 @@ import { Snapshot } from './snapshots'
 import { Inputs } from '../client'
 import {CollidableMesh, Updatable} from '../physics'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 import {OBJLoader} from "three/examples/jsm/loaders/OBJLoader.js";
 
 const loader = new GLTFLoader()

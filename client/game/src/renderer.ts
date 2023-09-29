@@ -1,7 +1,8 @@
 import * as Physics from './physics'
 import * as THREE from 'three'
 import { GameClient } from './client'
-import { Meat, Stone} from "./game/objects";
+import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+import { Meat, Stone } from './game/objects'
 
 
 interface cordinates {
@@ -34,41 +35,61 @@ function createCamera() {
     return camera
 }
 
+function createLights() {
+    const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x8d8d8d, 3)
+    hemisphereLight.position.set(0, 20, 0)
+
+    return hemisphereLight
+}
+
+/**
+ * Handles the rendering of the game.
+ * Also controls the TreeJS Scene.
+ * Don't forget to call {@link setCanvas} to start rendering!
+ */
 export default class Renderer {
     private readonly camera: THREE.PerspectiveCamera
-    private canvas: HTMLCanvasElement | OffscreenCanvas | undefined
     private gameClient: GameClient
-    private renderer: THREE.WebGLRenderer
+    private renderer?: THREE.WebGLRenderer
     scene: Physics.PhysicsScene
 
+
+    /**
+     *
+     * @param gameClient
+     */
     constructor(gameClient: GameClient) {
         this.camera = createCamera()
-        this.canvas = undefined
         this.gameClient = gameClient
-        this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas })
         this.scene = new Physics.PhysicsScene()
         const background = createBackground()
         this.scene.add(background)
         this.addObstaclesAndBonuses()
     }
 
-
-    initialize(canvas: HTMLCanvasElement | OffscreenCanvas, width: number, height: number) {
-        this.canvas = canvas
-
+    /**
+     * Call this method to assign a canvas to the Renderer.
+     * Will also start rendering the scene.
+     * @param canvas Can be a {@link HTMLCanvasElement} or an {@link OffscreenCanvas}.
+     * @param width canvas width
+     * @param height canvas height
+     */
+    setCanvas(canvas: HTMLCanvasElement | OffscreenCanvas, width: number, height: number) {
         this.renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvas })
         this.renderer.setSize(width, height)
 
         this.camera.aspect = width / height
 
-        this.animate(0)
-        const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x8d8d8d, 3 );
-        hemiLight.position.set( 0, 20, 0 );
-        this.scene.add( hemiLight );
+        this.animate(Date.now())
     }
 
-    onResize(width: number, height: number) {
-        this.renderer.setSize(width, height)
+    /**
+     * Resizes the renderer and adjusts the camera aspect.
+     * @param width new width
+     * @param height new height
+     */
+    resize(width: number, height: number) {
+        this.renderer?.setSize(width, height)
 
         this.camera.aspect = width / height
         this.camera.updateProjectionMatrix()
@@ -78,22 +99,26 @@ export default class Renderer {
         this.scene.add(object)
     }
 
+    /**
+     * Handles updating the {@link PhysicsScene}, syncing state to other clients via {@link GameClient.sendSnapshot}
+     * and rendering the new frame.
+     * @param time Current timestamp
+     */
     animate(time: number) {
+        requestAnimationFrame((time) => this.animate(time))
+
         this.scene.update()
         this.gameClient.sendSnapshot()
 
-        /*
         this.camera.position.x = this.gameClient.player.position.x
         this.camera.position.y = this.gameClient.player.position.y + 20
         this.camera.position.z = this.gameClient.player.position.z + 5
-        */
 
-        requestAnimationFrame((time) => this.animate(time))
         this.render()
     }
 
     render() {
-        this.renderer.render(this.scene, this.camera)
+        this.renderer?.render(this.scene, this.camera)
     }
 
     addObstaclesAndBonuses(){

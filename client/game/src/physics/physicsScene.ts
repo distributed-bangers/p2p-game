@@ -2,6 +2,9 @@ import * as THREE from 'three'
 import { CollidableMesh, isCollidable } from './collidableMesh'
 import { isUpdatable } from './updatable'
 
+/**
+ * Central part of the physics engine.
+ */
 export class PhysicsScene extends THREE.Scene {
     constructor() {
         super()

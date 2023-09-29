@@ -1,5 +1,5 @@
 import PeerClient from './peerClient'
-import { DataConnection } from 'peerjs'
+import { DataConnection, PeerJSOption } from 'peerjs'
 import Renderer from './renderer'
 import { Bullet, Player } from './game/objects'
 import { isSceneSnapshot, SceneSnapshot } from './game/snapshots'
@@ -21,17 +21,26 @@ export interface Inputs {
     shoot: boolean;
 }
 
+/**
+ * Central Class for game logic.
+ */
 export class GameClient {
     private readonly id: string
 
     private peerClient: PeerClient
     private peers: Peer[] = []
 
-    gameId: string = ''
-    player: Player
-    renderer: Renderer
+    gameId?: string
+    renderer?: Renderer
     state: GameState = {}
 
+    /**
+     * This constructor is only meant to be called by the {@link initialize} method.
+     * By doing this the {@link GameClient} is guaranteed to have an initialized {@link PeerClient}.
+     * As {@link id} for the client the {@link PeerClient.id} is used.
+     * @param peerClient
+     * @private
+     */
     private constructor(peerClient: PeerClient) {
         this.peerClient = peerClient
         this.peerClient.on('connection', (dataConnection) => {
@@ -39,29 +48,62 @@ export class GameClient {
         })
 
         this.id = peerClient.id
-        this.player = new Player('blue')
-        this.renderer = new Renderer(this)
-
-        this.addPlayer(this.id, this.player)
-
-        document.addEventListener('keydown', (ev) => this.onKeyDown(ev, this))
-        document.addEventListener('keyup', (ev) => this.onKeyUp(ev, this))
-        window.addEventListener('resize', () => this.renderer.onResize(window.innerWidth, window.innerHeight))
     }
 
+    /**
+     * Initializes a {@link PeerClient} and uses it to call the {@link constructor}.
+     * @param id Both the {@link PeerClient} and {@link GameClient} will use this id.
+     * @param options Options for the {@link PeerClient} ({@link PeerJSOption}).
+     */
     static async initialize(id?: string, options?: { host: string, port: number, path: string }) {
         const peerClient = await PeerClient.initialize(id, options)
 
         return new GameClient(peerClient)
     }
 
+    /**
+     * Returns the {@link Player} controlled by this {@link GameClient}.
+     */
+    get player(): Player {
+        return this.state[this.id]
+    }
+
+    /**
+     * Initializes
+     * @param gameId
+     * @param users An array of ids of other {@link GameClient}s
+     */
     async startGame(gameId: string, users: string[]) {
         this.gameId = gameId
+        this.renderer = new Renderer(this)
+
+        this.addPlayer(this.id, new Player('blue'))
+
+        document.addEventListener('keydown', (ev) => this.onKeyDown(ev, this))
+        document.addEventListener('keyup', (ev) => this.onKeyUp(ev, this))
+        window.addEventListener('resize', () => this.renderer?.resize(window.innerWidth, window.innerHeight))
 
         for (const user of users) {
             await this.connect(user)
         }
     }
+
+    // close all peerclient connections
+    // delete scenes and renderers
+    //
+    endGame() {
+        this.peers.forEach(peer => peer.connection.close())
+        delete this.gameId
+        delete this.renderer
+        this.state = {}
+        this.peers = []
+
+        // remove all event listeners
+        document.removeEventListener('keydown', (ev) => this.onKeyDown(ev, this))
+        document.removeEventListener('keyup', (ev) => this.onKeyUp(ev, this))
+        window.removeEventListener('resize', () => this.renderer?.resize(window.innerWidth, window.innerHeight))
+    }
+
 
     sendSnapshot() {
         const snapshot: SceneSnapshot = {
@@ -100,7 +142,7 @@ export class GameClient {
 
     private addPlayer(id: string, player: Player) {
         this.state[id] = player
-        this.renderer.addObject(player)
+        this.renderer?.addObject(player)
     }
 
     private onSceneSnapshot(id: string, snapshot: SceneSnapshot) {
@@ -111,7 +153,7 @@ export class GameClient {
             if (player.bullets.length < snapshot.bullets.length) {
                 player.spawnBullet()
             } else {
-                this.renderer.scene.remove(player.bullets.pop() as Bullet)
+                this.renderer?.scene.remove(player.bullets.pop() as Bullet)
             }
         }
 

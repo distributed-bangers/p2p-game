@@ -7,7 +7,7 @@ import { DataConnection, Peer, PeerConnectOption} from 'peerjs'
 export default class PeerClient extends Peer {
     readonly peers = new Set<string>()
 
-    private constructor(id = '', options = {host: 'localhost', port: 5173, path: '/peerserver'}) {
+    private constructor(id = '', options = {}) {
         super(id, options)
     }
 

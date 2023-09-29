@@ -26,7 +26,7 @@
     });
     await gameClient.startGame($userState.game._id, otherPlayerIds);
     console.log('AFTER START GAME', otherPlayerIds.length);
-    gameClient.renderer.initialize(canvas, canvas.clientWidth, canvas.clientHeight);
+    gameClient.renderer.setCanvas(canvas, canvas.clientWidth, canvas.clientHeight);
   });
 
 </script>
