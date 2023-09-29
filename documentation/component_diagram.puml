@@ -1,14 +1,15 @@
 @startuml component
 skinparam linetype ortho
 
-[      NGINX       ] as rp
-[userservice] as us
-[frontend] as fs
-[peerJSserver] as ps
-[gameservice] as gs
-database "user-\nMongoDB" as udb
-database "game-\nMongoDB" as gdb
+[      reverse_proxy       ] as rp
+[userservice] as us #GreenYellow
+[frontend] as fs #GreenYellow
+[peerserver] as ps
+[gameservice] as gs #GreenYellow
+database "user\nmongo" as udb
+database "game\nmongo" as gdb
 database "redis" as redis
+database "redissocket" as redissocket
 actor "Client" as c1
 
 c1 <--- rp: Responses
@@ -21,16 +22,5 @@ fs <---> rp: HTTP: /*
 udb <-- us
 redis <-- us
 gdb <-- gs
-
-
-
-' note left of us
-'     Handles authentication
-' end note
-' note right of gs
-'     Handles lobby logic
-' end note
-' note top of ps
-'     Handles p2p-connections
-' end note
+redissocket <-- gs
 @enduml
