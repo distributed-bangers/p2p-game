@@ -2,9 +2,10 @@
 skinparam linetype ortho
 
 [      NGINX       ] as rp
-[userservice] as us 
-[gameservice] as gs
+[userservice] as us
+[frontend] as fs
 [peerJSserver] as ps
+[gameservice] as gs
 database "user-\nMongoDB" as udb
 database "game-\nMongoDB" as gdb
 database "redis" as redis
@@ -16,18 +17,10 @@ rp <--- c1: Requests\n\n\n\n\n\n\n
 gs <---> rp: HTTP: /api/v1/games\nWebsocket: /socketio/v1\n
 us <---> rp: HTTP: /api/v1/users\n\n\n\n
 ps <---> rp: HTTP & Websocket:\n/peerserver\n\n\n\n
+fs <---> rp: HTTP: /*
 udb <-- us
 redis <-- us
 gdb <-- gs
-
-rp --> rp: HTTP: /\n\n\n\n\n\n
-
-
-note bottom of rp
-    Acts as both a reverse proxy
-    and a webserver to serve
-    the webapp
-end note
 
 
 
