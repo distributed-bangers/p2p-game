@@ -31,6 +31,8 @@ export class socketService {
     }
 
     //* These are the socket events that are received from the server
+
+    //* Other player joins lobby
     socketService.socket.on(socketMessageType.playerJoinsLobby, (data: string) => {
       const player: User = JSON.parse(data);
       userState.update((u) => {
@@ -59,7 +61,7 @@ export class socketService {
         u.game.playersInGame = u.game.playersInGame.filter(
           (p) => p.userid != player.userid,
         );
-        //* Update the gameClient: Disconnect WebRTC-Connection
+        //* Update the gameClient: Disconnect WebRTC-Connection and stop rendering the player
         gameClient.onPlayerDisconnect(player.userid);
         //* Double check if I am the last player ==> I won the game by the other player leaving
         if (u.game.playersInGame.length == 1)

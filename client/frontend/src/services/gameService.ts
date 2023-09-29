@@ -30,7 +30,6 @@ export async function getAllGames({
 
     const result: ResponseGames = await response.json();
     if (result.status != jrestStatus.success) {
-      //* Fehlermeldung vom Backend wird gelogt, User kriegt nur generische Fehlermeldung.
       if (result.message) throw new Error(result.message);
       else throw new Error(errorMessages.serverError);
     }
@@ -57,7 +56,6 @@ export async function createGame(gameName: string): Promise<ResponseGame> {
 
     const result: ResponseGame = await response.json();
     if (result.status != jrestStatus.success) {
-      //* Fehlermeldung vom Backend wird gelogt, User kriegt nur generische Fehlermeldung.
       if (result.message) throw new Error(result.message);
       else throw new Error(errorMessages.serverError);
     }
