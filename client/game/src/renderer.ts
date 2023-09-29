@@ -1,9 +1,8 @@
 import * as Physics from './physics'
 import * as THREE from 'three'
 import { GameClient } from './client'
-import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { Meat, Stone } from './game/objects'
-
+import { CSS2DRenderer } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 
 interface cordinates {
     x:number;
@@ -16,23 +15,28 @@ const random : cordinates[] = [
 ]
 
 function createBackground() {
-    const backgroundGeometry = new THREE.PlaneGeometry(100, 100)
-    const backgroundMaterial = new THREE.MeshBasicMaterial()
-    const background = new THREE.Mesh(backgroundGeometry, backgroundMaterial)
+  const backgroundGeometry = new THREE.PlaneGeometry(100, 100);
+  const backgroundMaterial = new THREE.MeshBasicMaterial();
+  const background = new THREE.Mesh(backgroundGeometry, backgroundMaterial);
 
-    background.rotateX(THREE.MathUtils.degToRad(270))
+  background.rotateX(THREE.MathUtils.degToRad(270));
 
-    return background
+  return background;
 }
 
 function createCamera() {
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
+  const camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000,
+  );
 
-    camera.position.y = 10
-    camera.position.z = 3
-    camera.lookAt(0, 0, 0)
+  camera.position.y = 10;
+  camera.position.z = 3;
+  camera.lookAt(0, 0, 0);
 
-    return camera
+  return camera;
 }
 
 function createLights() {
@@ -49,8 +53,10 @@ function createLights() {
  */
 export default class Renderer {
     private readonly camera: THREE.PerspectiveCamera
+    private lastSnapshotTime = 0;
     private gameClient: GameClient
     private renderer?: THREE.WebGLRenderer
+    private labelRenderer: CSS2DRenderer = new CSS2DRenderer();
     scene: Physics.PhysicsScene
 
 
@@ -65,6 +71,13 @@ export default class Renderer {
         const background = createBackground()
         this.scene.add(background)
         this.addObstaclesAndBonuses()
+        this.scene.add(createBackground());
+        this.scene.add(createLights());
+
+        this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
+        this.labelRenderer.domElement.style.position = "absolute";
+        this.labelRenderer.domElement.style.top = "0px";
+        document.body.appendChild(this.labelRenderer.domElement);
     }
 
     /**
@@ -91,24 +104,35 @@ export default class Renderer {
     resize(width: number, height: number) {
         this.renderer?.setSize(width, height)
 
-        this.camera.aspect = width / height
-        this.camera.updateProjectionMatrix()
-    }
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
+  }
 
-    addObject(object: THREE.Object3D) {
-        this.scene.add(object)
-    }
+  addObject(object: THREE.Object3D) {
+    this.scene.add(object);
+  }
+
+  removeObject(object: THREE.Object3D) {
+    this.scene.remove(object);
+  }
 
     /**
      * Handles updating the {@link PhysicsScene}, syncing state to other clients via {@link GameClient.sendSnapshot}
      * and rendering the new frame.
      * @param time Current timestamp
      */
-    animate(time: number) {
+    animate(time: DOMHighResTimeStamp) {
         requestAnimationFrame((time) => this.animate(time))
 
-        this.scene.update()
+        this.scene.update(time)
         this.gameClient.sendSnapshot()
+
+        // only sync snapshots at 20fps
+        if (time - this.lastSnapshotTime > 1000 / 20) {
+            this.gameClient.sendSnapshot();
+            this.lastSnapshotTime =
+                time - ((time - this.lastSnapshotTime) % (1000 / 20));
+        }
 
         this.camera.position.x = this.gameClient.player.position.x
         this.camera.position.y = this.gameClient.player.position.y + 20
@@ -119,6 +143,7 @@ export default class Renderer {
 
     render() {
         this.renderer?.render(this.scene, this.camera)
+        this.labelRenderer.render(this.scene, this.camera);
     }
 
     addObstaclesAndBonuses(){

@@ -1,10 +1,10 @@
 {
-    "compilerOptions": {
-        "module": "ESNext",
-        "target": "ESNext",
-        "moduleResolution": "nodenext",
-        "strict": true,
-        "allowSyntheticDefaultImports": true
-    },
-    "include": ["**/*.ts"]
+  "compilerOptions": {
+    "module": "ESNext",
+    "target": "ESNext",
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["**/*.ts"]
 }

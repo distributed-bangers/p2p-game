@@ -1,6 +1,7 @@
 import { writable } from 'svelte/store';
 import type { Game } from '../src/models/game';
 import { authenticateJWT } from '../src/shared/auth';
+import { socketService } from '../src/services/socketService';
 
 const token = document.cookie;
 
@@ -30,7 +31,17 @@ jwt.subscribe(async (value) => {
   try {
     const { userid, username } = await authenticateJWT(value);
     user.update((user) => ({ ...user, userid, username, authenticated: true }));
-  } catch (e) {}
+  } catch (e) { }
 });
+
+export const leaveRunningGame = () => {
+  user.update((u) => {
+    u.game = null;
+    u.isInGame = false;
+    u.isInGameLobby = false;
+    return u;
+  });
+  socketService.resetSocketService();
+};
 
 export default user;

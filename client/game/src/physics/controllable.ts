@@ -1,5 +1,5 @@
-import { Updatable } from './updatable'
+import { Updatable } from "./updatable";
 
 export interface Controllable extends Updatable {
-    updateInputs(inputs: object): void
+  updateInputs(inputs: object): void;
 }

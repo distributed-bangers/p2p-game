@@ -4,31 +4,34 @@ import Renderer from './renderer'
 import { Bullet, Player } from './game/objects'
 import { isSceneSnapshot, SceneSnapshot } from './game/snapshots'
 
+/**
+ * The GameState is an Object containing the state of each player in the game indexed by their respective id.
+ */
 interface GameState {
-    [playerId: string]: Player;
+  [playerId: string]: Player;
 }
 
 interface Peer {
-    connection: DataConnection;
-    id: string;
+  connection: DataConnection;
+  id: string;
 }
 
 export interface Inputs {
-    moveDown: boolean;
-    moveLeft: boolean;
-    moveRight: boolean;
-    moveUp: boolean;
-    shoot: boolean;
+  moveDown: boolean;
+  moveLeft: boolean;
+  moveRight: boolean;
+  moveUp: boolean;
+  shoot: boolean;
 }
 
 /**
  * Central Class for game logic.
  */
 export class GameClient {
-    private readonly id: string
+  private readonly id: string;
 
-    private peerClient: PeerClient
-    private peers: Peer[] = []
+  private peerClient: PeerClient;
+  private peers: Peer[] = [];
 
     gameId?: string
     renderer?: Renderer
@@ -83,10 +86,10 @@ export class GameClient {
         document.addEventListener('keyup', (ev) => this.onKeyUp(ev, this))
         window.addEventListener('resize', () => this.renderer?.resize(window.innerWidth, window.innerHeight))
 
-        for (const user of users) {
-            await this.connect(user)
-        }
+    for (const user of users) {
+      await this.connect(user);
     }
+  }
 
     // close all peerclient connections
     // delete scenes and renderers
@@ -122,16 +125,26 @@ export class GameClient {
         this.onConnection(dataConnection)
     }
 
-    onGameFinished(callBack: (highscore: number) => any) {
+  onGameFinished(callBack: (highscore: number) => any) { }
+
+  onPlayerDisconnect(playerId: string) {
+    this.removePlayer(playerId);
+
+    const peer = this.peers.find(({ id }) => id === playerId);
+
+    if (peer) {
+      peer.connection.close();
+
+      this.peers.splice(this.peers.indexOf(peer), 1);
     }
+  }
 
-    private onConnection(dataConnection: DataConnection) {
-        const id = dataConnection.peer
-        const peer: Peer = { id: id, connection: dataConnection }
-        this.peers.push(peer)
+  private onConnection(dataConnection: DataConnection) {
+    const id = dataConnection.peer;
+    const peer: Peer = { id: id, connection: dataConnection };
+    this.peers.push(peer);
 
-        const player = new Player('red')
-        this.addPlayer(id, player)
+    // const player = ;
 
         dataConnection.on('data', (data) => {
             if (isSceneSnapshot(data)) {
@@ -140,10 +153,21 @@ export class GameClient {
         })
     }
 
-    private addPlayer(id: string, player: Player) {
-        this.state[id] = player
-        this.renderer?.addObject(player)
+  private addPlayer(id: string, player: Player) {
+    this.state[id] = player;
+    this.renderer?.addObject(player);
+  }
+
+  private removePlayer(id: string) {
+    const player = this.state[id];
+    delete this.state[id];
+
+    for (const bullet of player.bullets) {
+      this.renderer?.removeObject(bullet);
     }
+
+    this.renderer?.removeObject(player);
+  }
 
     private onSceneSnapshot(id: string, snapshot: SceneSnapshot) {
         const player = this.state[id]

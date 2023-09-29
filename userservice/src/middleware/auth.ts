@@ -5,6 +5,12 @@ import { CustomReq, IPayload, IUser } from '../index.js'
 import c from 'config'
 import { redis_connection } from './redis.js'
 
+/**
+ * Checks if the JWT is valid and jwt is not in the list of revoked JWT
+ * @param req - is a modified request
+ * @param res - is a HTTP Response
+ * @param next - next function of Express
+ */
 export async function authenticateJWT(
     req: Request,
     res: Response,
@@ -40,6 +46,10 @@ export async function authenticateJWT(
     }
 }
 
+/**
+ * generates the JWT for the logged-in and just signed-in users
+ * @param user - user object
+ */
 export const generateJWT = (user: IUser): string => {
     const accessTokenSecret: Secret = c.get('token_secret')!
     return jwt.sign(
@@ -51,6 +61,11 @@ export const generateJWT = (user: IUser): string => {
     )
 }
 
+/**
+ * creates a hash with the salt process
+ * @param salt - salt for the user
+ * @param password - password of the user
+ */
 export function createHash(salt: string, password: string): string {
     return crypto
         .createHash('sha256')

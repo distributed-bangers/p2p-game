@@ -4,6 +4,10 @@ import { IPayload, IUser, SignUpUser } from '../index.js'
 import crypto from 'crypto'
 import { redis_connection } from '../middleware/redis.js'
 
+/**
+ * checks for the valid credentials and return token if everything is okay
+ * @param body - user object from the Request body
+ */
 export async function loginUserAsync(body: SignUpUser): Promise<string> {
     let { username, password } = body
     if (!username || !password) {
@@ -23,6 +27,11 @@ export async function loginUserAsync(body: SignUpUser): Promise<string> {
     }
 }
 
+/**
+ * creates a new user if everything is okay
+ * @param body - user object from Request body
+ * @return Promise<srting> - returns token
+ */
 export async function createUserAsync(body: SignUpUser): Promise<string> {
     let { username, password } = body
     if (!username || !password) {
@@ -48,6 +57,10 @@ export async function createUserAsync(body: SignUpUser): Promise<string> {
     }
 }
 
+/**
+ * returns the userdata for specific username
+ * @param username - username of user to get the object
+ */
 export async function getOneUserAsync(username: string): Promise<object> {
     if (!username) {
         throw new Error('Bad request')
@@ -60,6 +73,11 @@ export async function getOneUserAsync(username: string): Promise<object> {
     }
 }
 
+/**
+ * checks if the user with username already does exist
+ * @param username - user's username
+ * @return existingUser - returns user if there exists one
+ */
 async function checkUserExistence(username: string): Promise<null | IUser> {
     let existingUser
     try {
@@ -74,6 +92,10 @@ async function checkUserExistence(username: string): Promise<null | IUser> {
     }
 }
 
+/**
+ * revokes the given token
+ * @param payload - payload from the token
+ */
 export async function logoutOneUserAsync(payload: IPayload): Promise<void> {
     const { username, token } = payload
     if (username == null) {

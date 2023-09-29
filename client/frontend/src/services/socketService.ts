@@ -1,11 +1,9 @@
 import { io, Socket } from 'socket.io-client';
 import { get } from 'svelte/store';
-import userState from '../../state/user';
+import userState, { leaveRunningGame } from '../../state/user';
 import type { User } from '../models/user';
 import { socketMessageType } from '../shared/constants';
-import type { Game } from '../models/game';
-
-console.log('ATTENTION', import.meta.env.VITE_SOCKET_URL!);
+import { gameClient } from '../main';
 
 export class socketService {
   private static instance: socketService = null;
@@ -14,7 +12,6 @@ export class socketService {
   private static socketServer = import.meta.env.VITE_SOCKET_URL;
 
   private constructor(gameId: string, gameHost: User) {
-    console.log('SOCKETSERVICE INSTANCE CREATED');
 
     const client = <User>{
       username: get(userState).username,
@@ -24,6 +21,7 @@ export class socketService {
     if (!socketService.socket) {
       socketService.socket = io(socketService.socketServer, {
         path: import.meta.env.VITE_SOCKET_VERSION,
+        //* when a player connects to the socketService, he sends the gameId, hostId and his own player object
         extraHeaders: {
           gameid: gameId,
           hostid: gameHost.userid,
@@ -32,7 +30,10 @@ export class socketService {
       });
     }
 
-    socketService.socket.on(socketMessageType.join, (data: string) => {
+    //* These are the socket events that are received from the server
+
+    //* Other player joins lobby
+    socketService.socket.on(socketMessageType.playerJoinsLobby, (data: string) => {
       const player: User = JSON.parse(data);
       userState.update((u) => {
         if (u.game && u.isInGameLobby) u.game.players.push(player);
@@ -40,21 +41,44 @@ export class socketService {
       });
     });
 
-    socketService.socket.on(socketMessageType.leave, (data: string) => {
-      console.log('LEAVE', data);
+    //* Other player leaves lobby
+    socketService.socket.on(socketMessageType.playerLeavesLobby, (data: string) => {
       const player: User = JSON.parse(data);
       userState.update((u) => {
-        if (u.game && u.isInGameLobby)
-          u.game.players = u.game.players.filter(
-            (p) => p.userid != player.userid,
-          );
+        const reaminingPlayers = u.game.players.filter(
+          (p) => p.userid != player.userid,
+        );
+        u.game.players = reaminingPlayers;
         return u;
       });
     });
 
-    socketService.socket.on(socketMessageType.hostLeft, () => {
+    //* Other player leaves running game
+    socketService.socket.on(socketMessageType.playerLeavesGame, (data: string) => {
+      const player: User = JSON.parse(data);
       userState.update((u) => {
-        console.log('hostLeft');
+
+        u.game.playersInGame = u.game.playersInGame.filter(
+          (p) => p.userid != player.userid,
+        );
+        //* Update the gameClient: Disconnect WebRTC-Connection and stop rendering the player
+        gameClient.onPlayerDisconnect(player.userid);
+        //* Double check if I am the last player ==> I won the game by the other player leaving
+        if (u.game.playersInGame.length == 1)
+          if (u.game.playersInGame[0].userid == u.userid) {
+            alert('All other players have left.. So, you won the game! 🦝');
+            u.game = null;
+            u.isInGame = false;
+            u.isInGameLobby = false;
+            socketService.resetSocketService();
+          }
+        return u;
+      });
+    })
+
+    //* Host leaves lobby
+    socketService.socket.on(socketMessageType.hostLeavesLobby, () => {
+      userState.update((u) => {
         if (u.game) {
           u.isInGameLobby = false;
           alert('Host left the game');
@@ -64,49 +88,76 @@ export class socketService {
       socketService.resetSocketService();
     });
 
-    socketService.socket.on(socketMessageType.startGame, (players: User[]) => {
-      console.log('CLIENT RECEIVED', players);
-      //! So, this is actually the HOOK every player (except the host) receives on game startup
+    //* Host started game: Hook up the gameClient
+    socketService.socket.on(socketMessageType.hostStartsGame, (players: User[]) => {
       userState.update((u) => {
         if (u.game) {
+          //* Syncing the game state (players) with the server
           u.game.players = players;
+          u.game.playersInGame = players;
           u.isInGameLobby = false;
           u.isInGame = true;
         }
         return u;
       });
     });
+
+    //* Other player loses game
+    socketService.socket.on(socketMessageType.playerLosesGame, (data: string) => {
+      const losingPlayer: User = JSON.parse(data);
+      userState.update((u) => {
+        u.game.playersInGame = u.game.playersInGame.filter((p) => p.userid != losingPlayer.userid);
+        gameClient.onPlayerDisconnect(losingPlayer.userid);
+        return u;
+      });
+    });
+
+    //* I win the game
+    socketService.socket.on(socketMessageType.playerWinsGame, () => {
+      alert('You won the game! 🦝');
+      leaveRunningGame();
+    });
   }
 
-  private static async getInstance(gameName: string, gameHost: User) {
+  private static async getInstance(gameId: string, gameHost: User) {
     if (!socketService.instance)
-      socketService.instance = new socketService(gameName, gameHost);
+      socketService.instance = new socketService(gameId, gameHost);
   }
 
-  //* Jeder Spieler (auch Host) teilt seine Informationen beim Beitritt/Austritt
-  public static joinGame(gameName: string, gameHost: User) {
-    if (!socketService.instance) socketService.getInstance(gameName, gameHost);
-    socketService.socket.emit(socketMessageType.join);
+  //* These functions are used to send socket messages to the server
+  public static joinGame(gameId: string, gameHost: User) {
+    if (!socketService.instance) socketService.getInstance(gameId, gameHost);
+    socketService.socket.emit(socketMessageType.playerJoinsLobby);
   }
 
-  public static leaveGame(gameName: string, gameHost: User) {
-    if (socketService.instance) socketService.getInstance(gameName, gameHost);
-    socketService.socket.emit(socketMessageType.leave);
+  public static leaveLobby(gameId: string, gameHost: User) {
+    if (socketService.instance) socketService.getInstance(gameId, gameHost);
+    socketService.socket.emit(socketMessageType.playerLeavesLobby);
     socketService.resetSocketService();
   }
 
-  public static hostLeft(gameName: string, gameHost: User) {
-    if (socketService.instance) socketService.getInstance(gameName, gameHost);
-    socketService.socket.emit(socketMessageType.hostLeft);
+  public static hostLeft(gameId: string, gameHost: User) {
+    if (socketService.instance) socketService.getInstance(gameId, gameHost);
+    socketService.socket.emit(socketMessageType.hostLeavesLobby);
     socketService.resetSocketService();
   }
 
-  public static startGame(gameName: string, gameHost: User, players: User[]) {
-    if (socketService.instance) socketService.getInstance(gameName, gameHost);
-    socketService.socket.emit(socketMessageType.startGame, players);
+  public static startGame(gameId: string, gameHost: User, players: User[]) {
+    if (socketService.instance) socketService.getInstance(gameId, gameHost);
+    socketService.socket.emit(socketMessageType.hostStartsGame, players);
   }
 
-  private static resetSocketService() {
+  public static loseGame(gameId: string, gameHost: User) {
+    if (socketService.instance) socketService.getInstance(gameId, gameHost);
+    socketService.socket.emit(socketMessageType.playerLosesGame);
+  }
+
+  public static winGame(gameId: string, gameHost: User) {
+    if (socketService.instance) socketService.getInstance(gameId, gameHost);
+    socketService.socket.emit(socketMessageType.playerWinsGame);
+  }
+
+  public static resetSocketService() {
     socketService.instance = null;
     socketService.socket = null;
   }

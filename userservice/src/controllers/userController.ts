@@ -13,6 +13,12 @@ import {
     CustomReq,
 } from '../index.js'
 
+
+/**
+ * SignUp Endpoint to create new user
+ * @param req - is a modified request
+ * @param res - is HTTP Response
+ */
 export const signUp = async (
     req: TypedRequestBody<SignUpUser>,
     res: Response
@@ -31,6 +37,11 @@ export const signUp = async (
     }
 }
 
+/**
+ * Log in Endpoint to log in a user
+ * @param req - is a modified HTTP Request
+ * @param res - is HTTP Response
+ */
 export const login = async (
     req: TypedRequestBody<SignUpUser>,
     res: Response
@@ -49,6 +60,11 @@ export const login = async (
     }
 }
 
+/**
+ * Endpoint to get one single user
+ * @param req - is a modified request
+ * @param res - is a HTTP Response
+ */
 export const getOneUser = async (
     req: TypedRequestQuery<{ id: string }>,
     res: Response
@@ -71,6 +87,11 @@ export const getOneUser = async (
     }
 }
 
+/**
+ * Endpoint for logout process, it also adds the jwt for revocation
+ * @param req - is a modified request
+ * @param res - is a HTTP Response
+ */
 export const logoutUser = async (
     req: CustomReq,
     res: Response

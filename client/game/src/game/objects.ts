@@ -3,9 +3,13 @@ import * as Physics from '../physics'
 import { Snapshot } from './snapshots'
 import { Inputs } from '../client'
 import {CollidableMesh, Updatable} from '../physics'
+import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 import {OBJLoader} from "three/examples/jsm/loaders/OBJLoader.js";
+import { loseGame } from "../../../frontend/src/shared/gameEvents.js";
+import { get } from "svelte/store";
+import userState from '../../../frontend/state/user.js';
 
 const loader = new GLTFLoader()
 const mtlLoader: MTLLoader = new MTLLoader()
@@ -104,51 +108,81 @@ const bulletObject = await new Promise<THREE.Group>((resolve) => {
 })
 
 
-abstract class PhysicsObject extends Physics.CollidableMesh implements Physics.Snapshotable<Snapshot> {
-    getSnapshot(): Snapshot {
-        return { x: this.position.x, z: this.position.z, y: this.quaternion.y, w: this.quaternion.w }
-    }
+abstract class PhysicsObject
+  extends Physics.CollidableMesh
+  implements Physics.Snapshotable<Snapshot>
+{
+  getSnapshot(): Snapshot {
+    return {
+      x: this.position.x,
+      z: this.position.z,
+      y: this.quaternion.y,
+      w: this.quaternion.w,
+    };
+  }
 
-    setFromSnapshot(snapshot: Snapshot) {
-        this.position.set(snapshot.x, this.position.y, snapshot.z)
-        this.setRotationFromQuaternion(new THREE.Quaternion(0, snapshot.y, 0, snapshot.w))
-    }
+  setFromSnapshot(snapshot: Snapshot) {
+    this.position.set(snapshot.x, this.position.y, snapshot.z);
+    this.setRotationFromQuaternion(
+      new THREE.Quaternion(0, snapshot.y, 0, snapshot.w),
+    );
+  }
 }
 
+/*
+class HealthBar extends THREE.Mesh {
+  constructor() {
+    const geometry = new THREE.PlaneGeometry(1, hei);
+    const material = new THREE.MeshBasicMaterial({ color: "red" });
+
+    const text = new TextGeometry("TEST");
+
+    super(geometry, material);
+  }
+}*/
+
 export class Player extends PhysicsObject implements Updatable {
-    private actions = {}
-    private clock = new THREE.Clock
-    private mixer: THREE.AnimationMixer
-    bullets: Bullet[] = []
-    inputs: Inputs = {
-        moveDown: false, moveLeft: false, moveRight: false, moveUp: false, shoot: false,
-    }
-    shootCooldown = 0
-    needsUpdate: boolean
+  public readonly playerId: string;
+  private actions = {};
+  private clock = new THREE.Clock();
+  health = 100;
+  private mixer: THREE.AnimationMixer;
+  bullets: Bullet[] = [];
+  inputs: Inputs = {
+    moveDown: false,
+    moveLeft: false,
+    moveRight: false,
+    moveUp: false,
+    shoot: false,
+  };
+  shootCooldown = 0;
+  needsUpdate: boolean;
 
-    onCollision = () => this.material = new THREE.MeshBasicMaterial({ color: 'green' })
-    alias = 'player'
+  onCollision = () =>
+    (this.material = new THREE.MeshBasicMaterial({ color: "green" }));
 
-    constructor(color: THREE.ColorRepresentation) {
-        super()
-        loader.load('racoon.glb',
-            (gltf) => {
-                this.add(gltf.scene)
-                this.animations = gltf.animations
+  constructor(color: THREE.ColorRepresentation, id: string) {
+    super();
 
-            },
-            // called while loading is progressing
-            function(xhr) {
+    this.playerId = id;
+    loader.load(
+      "racoon.glb",
+      (gltf) => {
+        this.add(gltf.scene.children[0]);
+        this.animations = gltf.animations;
+      },
+      // called while loading is progressing
+      (xhr) => {
+        console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
+      },
+      // called when loading has errors
+      () => {
+        console.log("An error happened");
+      },
+    );
 
-                console.log((xhr.loaded / xhr.total * 100) + '% loaded')
 
-            },
-            // called when loading has errors
-            function(error) {
-
-                console.log('An error happened')
-
-            })
+    this.position.y = 0.1;
 
         this.mixer = new THREE.AnimationMixer(this)
         /*
@@ -156,10 +190,20 @@ export class Player extends PhysicsObject implements Updatable {
         const playerMaterial = new THREE.MeshBasicMaterial({ color: color })
         super(playerGeometry, playerMaterial)
         this.position.y = 1.5*/
+    this.needsUpdate = true;
 
-        this.needsUpdate = true
-        console.log("player" + this.position.x + " ," + this.position.y + " ,"+ this.position.z + " ,")
-    }
+    const moonMassDiv = document.createElement("progress");
+    moonMassDiv.max = this.health;
+    moonMassDiv.value = this.health;
+
+    const healthBarLabel = new CSS2DObject(moonMassDiv);
+    healthBarLabel.position.set(
+      this.position.x,
+      this.position.y + 3,
+      this.position.z,
+    );
+    this.add(healthBarLabel);
+  }
 
     spawnBullet() {
         const action = this.mixer.clipAction(this.animations[0])
@@ -171,51 +215,42 @@ export class Player extends PhysicsObject implements Updatable {
             .fadeIn(1).play()
         const bullet = new Bullet(bulletObject.clone())
 
-        this.getWorldPosition(bullet.position)
-        this.getWorldQuaternion(bullet.quaternion)
+    this.getWorldPosition(bullet.position);
+    this.getWorldQuaternion(bullet.quaternion);
 
-        this.parent!.add(bullet)
-        this.bullets.push(bullet)
+    this.parent!.add(bullet);
+    this.bullets.push(bullet);
+  }
+
+  update() {
+    this.mixer.update(this.clock.getDelta());
+    this.updateInputs();
+    this.updateBoundingVolume();
+  }
+
+  updateInputs(): void {
+    const inputs = this.inputs;
+
+    if (this.shootCooldown > 0) {
+      this.shootCooldown -= 1;
     }
-
-    update() {
-        this.mixer.update(this.clock.getDelta())
-        this.updateInputs()
+    if (inputs.moveUp) {
+      this.translateZ(0.15);
     }
-
-    updateInputs(): void {
-        const inputs = this.inputs
-
-        if (this.shootCooldown > 0) {
-            this.shootCooldown -= 1
-        }
-        if (inputs.moveUp) {
-            this.translateZ(0.15)
-        }
-        if (inputs.moveDown) {
-            this.translateZ(-0.15)
-        }
-        if (inputs.moveLeft) {
-            this.rotateY(0.06)
-        }
-        if (inputs.moveRight) {
-            this.rotateY(-0.06)
-        }
-        if (inputs.shoot && this.shootCooldown === 0) {
-            this.spawnBullet()
-            this.shootCooldown = 60
-        }
+    if (inputs.moveDown) {
+      this.translateZ(-0.15);
     }
-
-}
-
-class Gun extends THREE.Mesh {
-    constructor() {
-        const gunGeometry = new THREE.CylinderGeometry(0.2, 0.2, 1)
-        const gunMaterial = new THREE.MeshBasicMaterial({ color: 'black' })
-
-        super(gunGeometry, gunMaterial)
+    if (inputs.moveLeft) {
+      this.rotateY(0.06);
     }
+    if (inputs.moveRight) {
+      this.rotateY(-0.06);
+    }
+    if (inputs.shoot && this.shootCooldown === 0) {
+      this.spawnBullet();
+      this.shootCooldown = 60;
+    }
+  }
 }
 
 export class Bullet extends PhysicsObject implements Updatable{
@@ -224,12 +259,26 @@ export class Bullet extends PhysicsObject implements Updatable{
     constructor(trashCan : THREE.Group) {
         super()
         this.add(trashCan)
+        this.onCollision = (collisionTarget) => {
+            const hitPlayer = collisionTarget as Player;
 
+            if (hitPlayer.bullets.includes(this)) return;
+
+            hitPlayer.health -= 50;
+            this.removeFromParent();
+
+            if (hitPlayer.health > 0) return;
+
+            if ((hitPlayer as Player).playerId == get(userState).userid) {
+                loseGame();
+            };
+        }
     }
 
-    update() {
-        this.translateZ(0.1)
-    }
+  update() {
+    this.translateZ(0.1);
+    this.updateBoundingVolume();
+  }
 }
 
 export class Obstacle extends Physics.CollidableMesh {

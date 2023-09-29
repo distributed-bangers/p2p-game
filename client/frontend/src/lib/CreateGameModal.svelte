@@ -30,7 +30,7 @@
         }}
         disabled={gameName == ''}>Create Game</button
       >
-      <button autofocus on:click={() => dialog.close()}>Cancel</button>
+      <button on:click={() => dialog.close()}>Cancel</button>
     </div>
   </div>
 </dialog>

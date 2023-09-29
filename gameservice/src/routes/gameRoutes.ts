@@ -5,8 +5,8 @@ import {
     putGameJoin,
     deleteGame,
     putGameLeave,
-    postGameStart,
-    postGameFinish,
+    putGameStart,
+    putGameLose,
 } from '../controllers/gameController.js'
 import { authenticateJWT } from '../auth.js'
 
@@ -17,7 +17,7 @@ router.route('/').get(getGames).post(postGames)
 router.route('/:id').delete(deleteGame)
 router.route('/:id/join').put(putGameJoin)
 router.route('/:id/leave').put(putGameLeave)
-router.route('/:id/start').put(postGameStart)
-router.route('/:id/finish').put(postGameFinish)
+router.route('/:id/start').put(putGameStart)
+router.route('/:id/lose').put(putGameLose)
 
 export default router

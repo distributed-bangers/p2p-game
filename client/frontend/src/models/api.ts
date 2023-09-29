@@ -10,8 +10,8 @@ export interface ResponseGames {
   //* error message in case of fail/error
   message?: string;
 }
-//* Model for single Game API-Reponse
 
+//* Model for single Game API-Reponse
 export interface ResponseGame {
   status: jrestStatus;
   data: { game: Game };

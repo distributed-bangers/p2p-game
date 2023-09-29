@@ -1,6 +1,7 @@
 import * as jose from 'jose';
 import type { Payload } from '../models/api';
 
+// Function to check if the token is valid
 export const authenticateJWT = async (token: string) => {
   if (!token) {
     return null;
